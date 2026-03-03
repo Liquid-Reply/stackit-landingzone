@@ -1,0 +1,16 @@
+# Project Request: Team Beta — Development
+
+project_name: "team-beta-dev"
+team: "beta"
+environment: "dev"
+owner_email: "beta-lead@example.com"
+
+members:
+  - email: "beta-lead@example.com"
+    role: "owner"
+  - email: "beta-dev1@example.com"
+    role: "editor"
+
+extra_labels:
+  cost_center: "cc-5678"
+  application: "data-pipeline"

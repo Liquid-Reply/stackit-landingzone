@@ -1,0 +1,35 @@
+# Project Request: Team Alpha — Development
+# To request a new project, copy this template and submit a PR.
+
+project_name: "team-alpha-dev"
+team: "alpha"
+environment: "dev"
+owner_email: "ma.schmidt@reply.de"
+
+# Team members and their access level
+# Roles: owner, editor, reader
+members:
+  - email: "ich@max-schmidt.net"
+    role: "editor"
+  # - email: "alpha-dev1@example.com"
+  #   role: "editor"
+  # - email: "alpha-dev2@example.com"
+  #   role: "editor"
+
+# Optional extra labels
+extra_labels:
+  cost_center: "liquid-123"
+  application: "liquid-blog"
+
+# DNS — each project automatically gets a delegated zone:
+#   team-alpha-dev.dev.<your-domain> (e.g., team-alpha-dev.dev.example.com)
+# Teams can then self-manage records via the STACKIT portal.
+
+# Firewall — additional ingress rules (reviewed and approved by platform team)
+# Hub SSH + HTTPS ingress is always allowed. Add rules here for cross-project access.
+# firewall_rules:
+#   - name: "allow-beta-api"
+#     protocol: "tcp"
+#     ip_range: "10.0.1.0/24"    # Source CIDR (other project's network prefix)
+#     port_min: 8080
+#     port_max: 8080

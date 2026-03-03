@@ -1,0 +1,19 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfplan
+.terraform.lock.hcl
+
+# Sensitive variable files
+*.auto.tfvars
+secret.tfvars
+
+# OS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+*.swp
+.stackit/

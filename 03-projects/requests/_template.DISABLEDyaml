@@ -1,0 +1,44 @@
+# =============================================================================
+# PROJECT REQUEST TEMPLATE
+# =============================================================================
+# To request a new STACKIT project:
+#   1. Copy this file to: <team>-<environment>.yaml
+#   2. Fill in the fields below
+#   3. Submit a Pull Request
+#
+# The platform team will review and merge. Terraform will automatically
+# provision your project with:
+#   - Hub-spoke network connectivity (SNA)
+#   - Default security groups (HTTPS + SSH from hub, egress allowed)
+#   - CI/CD service account access (editor)
+#   - Monitoring service account access (reader)
+#   - Your team members with the roles you specify
+# =============================================================================
+
+# Required: Project display name (must be unique)
+project_name: "team-YOURTEAM-ENVIRONMENT"
+
+# Required: Team identifier (lowercase, no spaces)
+team: "yourteam"
+
+# Required: Environment (dev, staging, or prod)
+environment: "dev"
+
+# Required: Project owner email (must be a valid STACKIT user)
+owner_email: "your-lead@example.com"
+
+# Required: Team members and their access level
+# Available roles:
+#   - owner:  Full access + can manage roles
+#   - editor: Can create/modify/delete resources
+#   - reader: Read-only access
+members:
+  - email: "your-lead@example.com"
+    role: "owner"
+  - email: "developer@example.com"
+    role: "editor"
+
+# Optional: Extra labels for cost tracking, application tagging, etc.
+extra_labels:
+  cost_center: "cc-0000"
+  application: "my-app"
