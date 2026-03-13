@@ -34,6 +34,11 @@ variable "owner_email" {
   description = "Project owner email"
 }
 
+variable "billing_reference" {
+  type        = string
+  description = "Billing reference tag applied to the spoke project"
+}
+
 variable "network_name" {
   type        = string
   description = "Spoke network name"
@@ -124,6 +129,14 @@ variable "scrape_targets" {
   default     = []
   description = "Observability scrape targets for this environment"
 }
+
+# NetBird VPN agent
+variable "enable_netbird_agent" {
+  type        = bool
+  default     = false
+  description = "Install NetBird agent on bastion. Requires NetBird management server to be running."
+}
+
 
 # IAM
 variable "project_role_assignments" {

@@ -38,15 +38,15 @@ output "dns_zone_fqdn" {
   description = "Environment DNS sub-zone FQDN (e.g., dev.example.com)"
 }
 
-output "observability_instance_id" {
-  value       = var.enable_services ? module.observability[0].instance_id : ""
-  description = "Environment observability instance ID"
-}
+# output "observability_instance_id" {
+#   value       = var.enable_services ? module.observability[0].instance_id : ""
+#   description = "Environment observability instance ID"
+# }
 
-output "grafana_url" {
-  value       = var.enable_services ? module.observability[0].grafana_url : ""
-  description = "Environment Grafana dashboard URL"
-}
+# output "grafana_url" {
+#   value       = var.enable_services ? module.observability[0].grafana_url : ""
+#   description = "Environment Grafana dashboard URL"
+# }
 
 output "bastion_public_ip" {
   value       = var.enable_services ? module.bastion[0].public_ip : ""

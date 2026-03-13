@@ -4,19 +4,22 @@ resource "stackit_key_pair" "this" {
   public_key = var.ssh_public_key
 }
 
-# Network interface on the hub network
+# Network interface on the spoke network
 resource "stackit_network_interface" "this" {
-  project_id = var.project_id
-  network_id = var.network_id
+  project_id         = var.project_id
+  network_id         = var.network_id
+  name               = "${var.name}-nic"
+  security_group_ids = [stackit_security_group.this.security_group_id]
 }
 
-# Bastion server
+# Server
 resource "stackit_server" "this" {
   project_id        = var.project_id
   name              = var.name
   availability_zone = var.availability_zone
   machine_type      = var.machine_type
   keypair_name      = stackit_key_pair.this.name
+  user_data         = var.user_data
 
   boot_volume = {
     source_type           = "image"
@@ -28,30 +31,27 @@ resource "stackit_server" "this" {
   network_interfaces = [stackit_network_interface.this.network_interface_id]
 }
 
-# Public IP for bastion access
+# Public IP — only when direct access is needed (disabled for VPN-only peers)
 resource "stackit_public_ip" "this" {
-  project_id = var.project_id
-  labels     = { role = "bastion" }
-}
-
-resource "stackit_public_ip_associate" "this" {
+  count                = var.enable_public_ip ? 1 : 0
   project_id           = var.project_id
-  public_ip_id         = stackit_public_ip.this.public_ip_id
   network_interface_id = stackit_network_interface.this.network_interface_id
+  labels               = { role = var.name }
 }
 
-# Bastion security group — allow SSH from admin CIDRs only
-resource "stackit_security_group" "bastion" {
+# Security group
+resource "stackit_security_group" "this" {
   project_id = var.project_id
   name       = "${var.name}-sg"
-  labels     = { role = "bastion" }
+  labels     = { role = var.name }
 }
 
+# SSH ingress — only when public IP is enabled
 resource "stackit_security_group_rule" "ssh_ingress" {
-  for_each = toset(var.allowed_ssh_cidrs)
+  for_each = var.enable_public_ip ? toset(var.allowed_ssh_cidrs) : toset([])
 
   project_id        = var.project_id
-  security_group_id = stackit_security_group.bastion.security_group_id
+  security_group_id = stackit_security_group.this.security_group_id
   direction         = "ingress"
   ether_type        = "IPv4"
   ip_range          = each.value

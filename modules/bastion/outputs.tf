@@ -1,19 +1,19 @@
 output "server_id" {
   value       = stackit_server.this.server_id
-  description = "Bastion server ID"
+  description = "Server ID"
 }
 
 output "public_ip" {
-  value       = stackit_public_ip.this.ip
-  description = "Bastion public IP address"
+  value       = var.enable_public_ip ? stackit_public_ip.this[0].ip : ""
+  description = "Public IP address (empty when enable_public_ip = false)"
 }
 
 output "private_ip" {
   value       = stackit_network_interface.this.ipv4
-  description = "Bastion private IP address"
+  description = "Private IP address"
 }
 
 output "security_group_id" {
-  value       = stackit_security_group.bastion.security_group_id
-  description = "Bastion security group ID"
+  value       = stackit_security_group.this.security_group_id
+  description = "Security group ID"
 }

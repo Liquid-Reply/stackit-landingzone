@@ -123,7 +123,7 @@ export AWS_SECRET_ACCESS_KEY="<state_secret_key>"
 
 ### How it works
 
-The landing zone uses a **STACKIT Network Area (SNA)** to create a routed hub & spoke network. All projects that share the same SNA can communicate over private IPs without any additional peering or VPN setup.
+The landing zone uses **per-environment STACKIT Network Areas (SNAs)** to create isolated routed networks. Each environment (dev, staging, prod) has its own SNA, providing **L3-level isolation** between stages. Projects within the same environment share an SNA and can communicate over private IPs without any additional peering.
 
 ```
                     STACKIT Organization
@@ -136,30 +136,41 @@ The landing zone uses a **STACKIT Network Area (SNA)** to create a routed hub & 
     |         |         |          |      |      |
    Hub      Dev      Staging     team   team   team
   Project   Spoke     Spoke      alpha  alpha  beta
-             |         |          dev    prod   dev
+  (VPN,     (own      (own       dev    prod   dev
+   DNS,      SNA)      SNA)
+   SAs)      |
             Prod
             Spoke
+            (own SNA)
 
-All projects share the same Network Area (SNA)
-  -> Routed networks get automatic L3 connectivity
-  -> Hub acts as central point for shared services
+Each environment has its own SNA (no L3 route between them)
+  -> Routed networks get automatic L3 connectivity within an env
+  -> Hub provides DNS, VPN, and shared service accounts
 ```
 
 ### Network flow
 
-1. **Network Area** is created at the organization level in the hub layer
-2. **Hub project** is labeled with `networkArea = <SNA_ID>` and gets a routed network
-3. **Spoke projects** (and team projects) are also labeled with the same SNA ID
+1. **Network Areas** are created per environment in the spoke layer (dev-sna, staging-sna, prod-sna)
+2. **Spoke projects** are labeled with their environment's `networkArea = <SNA_ID>` and get a routed network
+3. **Team projects** (from the project factory) are labeled with the same SNA ID as their environment
 4. Any routed network created inside an SNA-labeled project automatically gets L3 connectivity to all other networks in the same SNA
+5. There is **no routing path between environments** — each SNA is an isolated L3 domain
 
 ### What lives in the hub
 
 | Service | Purpose |
 |---|---|
-| **Bastion host** | SSH jump server with a public IP -- the only ingress point from the internet |
-| **DNS zone** | Root zone for the landing zone; spokes register `*.<env>` wildcard records |
-| **Observability** | Centralized Prometheus + Grafana instance; spokes register scrape targets |
+| **NetBird VPN** | Self-hosted WireGuard management server on an isolated network (no SNA) |
+| **DNS root zone** | Root zone for the landing zone; spokes create NS-delegated sub-zones |
 | **Service accounts** | `sa-cicd` (deployments) and `sa-monitoring` (metric scraping) |
+
+### What lives in each spoke
+
+| Service | Purpose |
+|---|---|
+| **Bastion host** | SSH jump server / NetBird subnet router (no public IP when VPN is enabled) |
+| **DNS sub-zone** | Environment sub-zone (e.g. `dev.stackit-lz-demo.org`), NS-delegated from hub |
+| **Observability** | Per-environment Prometheus + Grafana instance |
 
 ### Security groups
 

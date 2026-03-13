@@ -31,7 +31,14 @@ variable "ssh_public_key" {
 
 variable "allowed_ssh_cidrs" {
   type        = list(string)
-  description = "CIDRs allowed to SSH into the bastion"
+  default     = []
+  description = "CIDRs allowed to SSH into the server (only used when enable_public_ip = true)"
+}
+
+variable "enable_public_ip" {
+  type        = bool
+  default     = true
+  description = "Whether to assign a public IP and SSH ingress rules. Disable for VPN-only access."
 }
 
 variable "availability_zone" {
@@ -43,4 +50,10 @@ variable "boot_volume_size" {
   type        = number
   default     = 8
   description = "Boot volume size in GB"
+}
+
+variable "user_data" {
+  type        = string
+  default     = null
+  description = "Base64-encoded cloud-init user data (optional)"
 }

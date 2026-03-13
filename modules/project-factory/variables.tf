@@ -55,6 +55,12 @@ variable "sa_monitoring_email" {
   description = "Hub monitoring service account email (gets reader role)"
 }
 
+variable "billing_reference" {
+  type        = string
+  default     = ""
+  description = "Billing reference tag applied to the project"
+}
+
 variable "extra_labels" {
   type        = map(string)
   default     = {}

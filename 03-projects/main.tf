@@ -85,6 +85,7 @@ module "project" {
   environment         = each.value.environment
   network_area_id     = local.environments[each.value.environment].network_area_id
   hub_cidr            = local.environments[each.value.environment].spoke_cidr
+  billing_reference   = try(each.value.billing_reference, "")
   extra_labels        = try(each.value.extra_labels, {})
 
   # SA roles are inherited from teams/ folder-level IAM — no need to assign per-project

@@ -1,0 +1,33 @@
+#cloud-config
+package_update: true
+package_upgrade: true
+
+packages:
+  - apt-transport-https
+  - ca-certificates
+  - curl
+  - gnupg
+  - lsb-release
+
+runcmd:
+  # Install Docker
+  - curl -fsSL https://get.docker.com | sh
+  - systemctl enable docker
+  - systemctl start docker
+
+  # Install docker-compose plugin
+  - apt-get install -y docker-compose-plugin
+
+  # Run NetBird quickstart (without Zitadel — uses built-in Dex IdP)
+  - mkdir -p /opt/netbird
+  - |
+    export NETBIRD_DOMAIN="${netbird_domain}"
+    export REVERSE_PROXY_TYPE=0
+    export TRAEFIK_ACME_EMAIL="${letsencrypt_email}"
+    export BIND_LOCALHOST_ONLY=false
+    curl -fsSL https://github.com/netbirdio/netbird/releases/latest/download/getting-started.sh -o /opt/netbird/getting-started.sh
+    chmod +x /opt/netbird/getting-started.sh
+    # Patch script: replace the interactive read_traefik_acme_email function
+    # with one that returns the pre-set env var (cloud-init has no /dev/tty).
+    sed -i '/^read_traefik_acme_email() {/,/^}/c\read_traefik_acme_email() { echo "${letsencrypt_email}"; }' /opt/netbird/getting-started.sh
+    cd /opt/netbird && bash getting-started.sh
