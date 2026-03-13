@@ -12,6 +12,7 @@ resource "stackit_network_area_region" "this" {
     transfer_network      = var.transfer_network
     default_prefix_length = var.default_prefix_length
     network_ranges        = var.network_ranges
+    default_nameservers = [ "1.1.1.1", "8.8.8.8", "9.9.9.9" ]
   }
 }
 

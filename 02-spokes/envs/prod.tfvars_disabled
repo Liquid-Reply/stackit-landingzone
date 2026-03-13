@@ -8,9 +8,10 @@ service_account_key_path = "sa-key.json"
 private_key_path         = "sa-key.pem"
 organization_id          = "825158dd-6d82-4fa9-8891-c59f2d1f672c"
 
-environment     = "prod"
-project_name    = "landingzone-spoke-prod"
-owner_email     = "ma.schmidt@reply.de"
+environment       = "prod"
+project_name      = "landingzone-spoke-prod"
+owner_email       = "ma.schmidt@reply.de"
+billing_reference = ""
 network_name    = "prod-network"
 dns_subdomain   = "prod"
 enable_services = false
@@ -32,6 +33,9 @@ ssh_public_key       = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC8t+0p2Y7PoTcSaVlg
 allowed_ssh_cidrs    = ["203.0.113.0/24"]
 
 scrape_targets = []
+
+# NetBird VPN agent — set to true after NetBird server is running and hub PAT is retrieved
+enable_netbird_agent = false
 
 # IAM — Strict access: only platform team has access (via owner_email + hub SAs)
 project_role_assignments = []

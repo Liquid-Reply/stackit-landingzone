@@ -15,11 +15,12 @@ graph TB
         subgraph platform["Folder: platform/"]
             direction TB
 
-            subgraph hub["Hub Project (no network)"]
+            subgraph hub["Hub Project"]
                 direction LR
                 dns_root["DNS: example.com<br/><i>Root zone</i>"]
                 sa_cicd["SA: CI/CD"]
                 sa_mon["SA: Monitoring"]
+                netbird_srv["NetBird VPN<br/><i>Isolated network</i>"]
             end
 
             subgraph sna_dev["SNA: dev (10.0.0.0/16)"]
@@ -153,6 +154,59 @@ graph TB
 - Cross-project access within the same environment requires a `firewall_rules` entry in YAML, approved via PR
 - No public IPs allowed (permission denied via custom RBAC)
 
+## VPN Access (NetBird)
+
+Self-hosted [NetBird](https://netbird.io/) provides WireGuard-based VPN access to all environments. The management server runs in the hub on an isolated network. Spoke bastions run NetBird agents and are registered as network routers for their environment's subnet. All NetBird resources (groups, setup keys, networks, policies, DNS nameservers) are managed via the NetBird Terraform provider.
+
+```mermaid
+graph TB
+    subgraph hub["Hub Project"]
+        subgraph hub_net["Isolated Network (192.168.100.0/24)"]
+            nb_server["NetBird Server<br/><i>Management + Signal + Relay</i><br/><i>netbird.&lt;ip&gt;.nip.io</i><br/><i>TCP 80/443, UDP 3478</i>"]
+        end
+    end
+
+    subgraph sna_dev["SNA: dev (10.0.0.0/16)"]
+        bastion_dev["dev-bastion<br/><i>NetBird agent</i><br/><i>network: dev-network</i>"]
+    end
+
+    subgraph sna_stg["SNA: staging (10.1.0.0/16)"]
+        bastion_stg["stg-bastion<br/><i>NetBird agent</i><br/><i>network: staging-network</i>"]
+    end
+
+    subgraph sna_prod["SNA: prod (10.2.0.0/16)"]
+        bastion_prod["prod-bastion<br/><i>NetBird agent</i><br/><i>network: prod-network</i>"]
+    end
+
+    user["VPN User<br/><i>NetBird client</i>"]
+
+    user -->|"WireGuard tunnel"| nb_server
+    nb_server -.->|"WireGuard overlay<br/>(via internet)"| bastion_dev
+    nb_server -.->|"WireGuard overlay"| bastion_stg
+    nb_server -.->|"WireGuard overlay"| bastion_prod
+
+    style hub fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style hub_net fill:#e8f5e9,stroke:#2e7d32,stroke-width:1px
+    style sna_dev fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
+    style sna_stg fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    style sna_prod fill:#fce4ec,stroke:#c62828,stroke-width:2px
+    style user fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+```
+
+**How it works:**
+- NetBird management server coordinates WireGuard peer connections (does **not** relay traffic by default)
+- Each spoke bastion registers as a NetBird peer via a setup key and is assigned to its environment group
+- A `netbird_network` + `netbird_network_resource` + `netbird_network_router` advertises each environment's SNA subnet through the bastion peer group
+- A per-environment `netbird_policy` controls which peers can reach which networks (environment-level ACL)
+- A `netbird_nameserver_group` routes DNS queries for `<env>.stackit-lz-demo.org` through STACKIT's authoritative nameservers — VPN clients can resolve private DNS records
+- VPN users connect via the NetBird client — traffic flows through WireGuard tunnels directly to bastion peers
+- The overlay network does **not** break SNA L3 isolation — it tunnels through the internet, not through SNA routing
+
+**Deployment sequence:**
+1. Deploy NetBird server in hub (`enable_netbird = true`, provide `netbird_letsencrypt_email`)
+2. Log into the NetBird dashboard, create a PAT, and set it in hub tfvars (`netbird_api_token`)
+3. Enable agent on spoke bastions (`enable_netbird_agent = true`) — setup keys, networks, policies, and DNS are created automatically via Terraform
+
 ## DNS Delegation
 
 ```mermaid
@@ -190,7 +244,7 @@ graph TB
     org --> folder_platform["Folder: platform/<br/><i>Platform team: owner</i><br/><small>inherited by all children</small>"]
     org --> folder_teams["Folder: teams/<br/><i>SA CI/CD: editor</i><br/><i>SA Monitoring: reader</i><br/><small>inherited by all team projects</small>"]
 
-    folder_platform --> hub_proj["Hub Project<br/><i>DNS root zone, SAs</i><br/><i>(no network)</i>"]
+    folder_platform --> hub_proj["Hub Project<br/><i>DNS root zone, SAs, NetBird VPN</i><br/><i>(isolated network)</i>"]
     folder_platform --> spoke_dev_proj["Spoke: dev<br/><i>SNA + Network + DNS sub-zone</i><br/><i>Bastion + Observability</i>"]
     folder_platform --> spoke_prod_proj["Spoke: prod<br/><i>SNA + Network + DNS sub-zone</i><br/><i>Bastion + Observability</i>"]
 
@@ -262,7 +316,7 @@ graph TB
 
     subgraph L1["Layer 1: Hub"]
         direction LR
-        l1_desc["Project, DNS root zone,<br/>Service accounts, Folder IAM"]
+        l1_desc["Project, DNS root zone,<br/>Service accounts, Folder IAM,<br/>NetBird VPN server"]
         l1_state["State: s3://hub/"]
     end
 
@@ -314,7 +368,7 @@ graph TB
                 direction TB
                 cluster["SKE Cluster"]
                 subgraph nodes["Node Pools"]
-                    app_pool["app-pool: 3x g2i.2"]
+                    app_pool["app-pool: 3x g2i.1"]
                     infra_pool["infra-pool: 2x g2i.4"]
                 end
                 subgraph pods["Kubernetes Workloads"]

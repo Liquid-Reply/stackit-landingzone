@@ -33,7 +33,7 @@ module "hub_project" {
   parent_container_id = module.folder_platform.container_id
   name                = var.hub_project_name
   owner_email         = var.owner_email
-  labels              = { role = "hub", managed_by = "terraform" }
+  labels              = { role = "hub", managed_by = "terraform", billingReference = var.billing_reference }
 }
 
 # -----------------------------------------------------------------------------
@@ -48,6 +48,43 @@ module "root_dns" {
   contact_email = var.dns_contact_email
   records       = [] # Records added by spoke layers
 }
+
+# -----------------------------------------------------------------------------
+# NetBird VPN — Self-hosted management server
+# Isolated non-routed network (hub has no SNA).
+# Gated by enable_netbird (two-apply: hub project must exist first).
+# -----------------------------------------------------------------------------
+
+# Hub routed network for NetBird VM (routed for public IP, no SNA)
+module "netbird_network" {
+  source = "../modules/networking"
+  count  = var.enable_netbird ? 1 : 0
+
+  project_id       = module.hub_project.project_id
+  name             = "netbird-network"
+  routed           = true
+  ipv4_prefix      = "192.168.100.0/24"
+  ipv4_gateway     = "192.168.100.1"
+  ipv4_nameservers = ["1.1.1.1", "8.8.8.8", "ns1.stackit.cloud"]
+  labels           = { role = "netbird", managed_by = "terraform" }
+}
+
+module "netbird" {
+  source = "../modules/netbird"
+  count  = var.enable_netbird ? 1 : 0
+
+  project_id        = module.hub_project.project_id
+  name              = "netbird"
+  machine_type      = var.netbird_machine_type
+  image_id          = var.netbird_image_id
+  network_id        = module.netbird_network[0].network_id
+  ssh_public_key    = var.netbird_ssh_public_key
+  allowed_ssh_cidrs = var.netbird_allowed_ssh_cidrs
+  allowed_vpn_cidrs = var.netbird_allowed_vpn_cidrs
+  availability_zone = "${var.region}-1"
+  letsencrypt_email = var.netbird_letsencrypt_email
+}
+
 
 # -----------------------------------------------------------------------------
 # Centralized IAM — Service accounts for automation

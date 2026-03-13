@@ -36,7 +36,7 @@ module "network_area" {
   transfer_network      = var.sna_transfer_network
   network_ranges        = var.sna_network_ranges
   default_prefix_length = var.sna_default_prefix_length
-  labels                = { environment = var.environment, managed_by = "terraform" }
+  labels                = { environment = var.environment, managed_by = "terraform", "preview/routingtables" = "true" }
 }
 
 # -----------------------------------------------------------------------------
@@ -50,9 +50,10 @@ module "spoke_project" {
   name                = var.project_name
   owner_email         = var.owner_email
   labels = {
-    networkArea = module.network_area.network_area_id
-    environment = var.environment
-    managed_by  = "terraform"
+    networkArea      = module.network_area.network_area_id
+    environment      = var.environment
+    managed_by       = "terraform"
+    billingReference = var.billing_reference
   }
 }
 
@@ -66,7 +67,6 @@ module "spoke_network" {
   name       = var.network_name
   routed     = true
   labels     = { environment = var.environment }
-
   # SNA must be fully configured (including region/IP ranges) before creating networks
   depends_on = [module.network_area]
 }
@@ -148,39 +148,41 @@ resource "stackit_dns_zone" "env" {
 # Observability — Per-environment monitoring instance
 # Gated by enable_services (provider validates plan_name at plan time)
 # -----------------------------------------------------------------------------
-module "observability" {
-  source = "../modules/observability"
-  count  = var.enable_services ? 1 : 0
+# module "observability" {
+#   source = "../modules/observability"
+#   count  = var.enable_services ? 1 : 0
 
-  project_id             = module.spoke_project.project_id
-  name                   = "${var.environment}-observability"
-  plan_name              = var.observability_plan
-  acl                    = ["0.0.0.0/0"]
-  metrics_retention_days = var.metrics_retention_days
-  logs_retention_days    = var.logs_retention_days
-  traces_retention_days  = var.logs_retention_days
-  scrape_configs         = [] # Can be populated via scrape_targets variable
-}
+#   project_id             = module.spoke_project.project_id
+#   name                   = "${var.environment}-observability"
+#   plan_name              = var.observability_plan
+#   acl                    = ["0.0.0.0/0"]
+#   metrics_retention_days = var.metrics_retention_days
+#   logs_retention_days    = var.logs_retention_days
+#   traces_retention_days  = var.logs_retention_days
+#   scrape_configs         = [] # Can be populated via scrape_targets variable
+# }
 
-# Register additional scrape targets on the environment's observability instance
-resource "stackit_observability_scrapeconfig" "spoke" {
-  for_each = var.enable_services ? { for sc in var.scrape_targets : sc.name => sc } : {}
+# # Register additional scrape targets on the environment's observability instance
+# resource "stackit_observability_scrapeconfig" "spoke" {
+#   for_each = var.enable_services ? { for sc in var.scrape_targets : sc.name => sc } : {}
 
-  project_id   = module.spoke_project.project_id
-  instance_id  = module.observability[0].instance_id
-  name         = each.value.name
-  metrics_path = each.value.metrics_path
+#   project_id   = module.spoke_project.project_id
+#   instance_id  = module.observability[0].instance_id
+#   name         = each.value.name
+#   metrics_path = each.value.metrics_path
 
-  targets = [
-    {
-      urls   = each.value.urls
-      labels = { environment = var.environment }
-    }
-  ]
-}
+#   targets = [
+#     {
+#       urls   = each.value.urls
+#       labels = { environment = var.environment }
+#     }
+#   ]
+# }
 
 # -----------------------------------------------------------------------------
-# Bastion Host — Per-environment jump server
+# NetBird Peer / Bastion — Per-environment subnet router
+# When NetBird is enabled, runs as a VPN peer (no public IP).
+# When NetBird is disabled, acts as a traditional bastion with public IP + SSH.
 # Gated by enable_services (requires project to exist)
 # -----------------------------------------------------------------------------
 module "bastion" {
@@ -195,6 +197,106 @@ module "bastion" {
   ssh_public_key    = var.ssh_public_key
   allowed_ssh_cidrs = var.allowed_ssh_cidrs
   availability_zone = "${var.region}-1"
+  enable_public_ip  = !var.enable_netbird_agent
+
+  # NetBird agent — installs and registers with the hub's NetBird management server
+  # Setup key is created by the NetBird provider below (self-registration)
+  user_data = var.enable_netbird_agent ? templatefile(
+    "${path.module}/templates/bastion-netbird.yaml",
+    {
+      netbird_setup_key      = netbird_setup_key.env[0].key
+      netbird_management_url = local.hub.netbird_management_url
+    }
+  ) : null
+}
+
+# -----------------------------------------------------------------------------
+# NetBird Self-Registration — Each spoke registers itself in the NetBird control plane
+# Creates a group, setup key, and route for this environment's subnet.
+# Gated by enable_netbird_agent (requires hub NetBird server + PAT to be available).
+# -----------------------------------------------------------------------------
+
+# Group for this environment's peers (bastions)
+resource "netbird_group" "env" {
+  count = var.enable_netbird_agent ? 1 : 0
+  name  = var.environment
+}
+
+# Reusable setup key — auto-assigns peers to the environment group
+resource "netbird_setup_key" "env" {
+  count          = var.enable_netbird_agent ? 1 : 0
+  name           = "${var.environment}-setup-key"
+  type           = "reusable"
+  auto_groups    = [netbird_group.env[0].id]
+  usage_limit    = 0
+  expiry_seconds = 31536000 # 1 year
+}
+
+# Network — represents this environment's SNA subnet in NetBird
+resource "netbird_network" "env" {
+  count       = var.enable_netbird_agent ? 1 : 0
+  name        = "${var.environment}-network"
+  description = "Network for ${var.environment} spoke SNA subnet"
+}
+
+# Network resource — the SNA subnet CIDR reachable via the bastion
+resource "netbird_network_resource" "env" {
+  count      = var.enable_netbird_agent ? 1 : 0
+  network_id = netbird_network.env[0].id
+  name       = "${var.environment}-subnet"
+  address    = var.sna_network_ranges[0].prefix
+  groups     = [netbird_group.env[0].id]
+}
+
+# Network router — bastion peer group routes traffic into the SNA
+resource "netbird_network_router" "env" {
+  count       = var.enable_netbird_agent ? 1 : 0
+  network_id  = netbird_network.env[0].id
+  peer_groups = [netbird_group.env[0].id]
+  masquerade  = true
+  metric      = 9999
+  enabled     = true
+}
+
+# Policy — allow all peers to reach this environment's network
+resource "netbird_policy" "env" {
+  count       = var.enable_netbird_agent ? 1 : 0
+  name        = "${var.environment}-default-access"
+  description = "Allow access to ${var.environment} spoke network"
+  enabled     = true
+
+  rule {
+    name        = "${var.environment}-allow-all"
+    enabled     = true
+    action      = "accept"
+    bidirectional = true
+    protocol    = "all"
+    sources     = [netbird_group.env[0].id]
+    destination_resource = {
+      id   = netbird_network_resource.env[0].id
+      type = "network"
+    }
+  }
+}
+
+# DNS — Route queries for the landing zone domain through STACKIT nameservers
+# VPN clients can resolve e.g. myapp.dev.stackit-lz-demo.org even though
+# the domain is not registered publicly (STACKIT DNS zones are authoritative).
+resource "netbird_nameserver_group" "stackit_dns" {
+  count   = var.enable_netbird_agent ? 1 : 0
+  name    = "${var.environment}-stackit-dns"
+  groups  = [netbird_group.env[0].id]
+  enabled = true
+  primary = false
+  domains = ["${var.dns_subdomain}.${local.hub.root_dns_name}"]
+
+  nameservers = [
+    { ip = "192.174.68.16", ns_type = "udp", port = 53 },
+    { ip = "176.97.158.16", ns_type = "udp", port = 53 },
+  ]
+
+  search_domains_enabled = true
+  description            = "Resolve ${var.dns_subdomain}.${local.hub.root_dns_name} via STACKIT nameservers"
 }
 
 # -----------------------------------------------------------------------------

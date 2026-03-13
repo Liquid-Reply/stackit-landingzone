@@ -6,6 +6,10 @@ terraform {
       source  = "stackitcloud/stackit"
       version = "~> 0.81"
     }
+    netbird = {
+      source  = "netbirdio/netbird"
+      version = "~> 0.0.8"
+    }
   }
 }
 
@@ -14,4 +18,9 @@ provider "stackit" {
   service_account_key_path = var.service_account_key_path
   private_key_path         = var.private_key_path
   experiments              = ["iam"]
+}
+
+provider "netbird" {
+  token          = var.enable_netbird_agent ? local.hub.netbird_pat : "unused"
+  management_url = var.enable_netbird_agent ? local.hub.netbird_management_url : "http://localhost"
 }

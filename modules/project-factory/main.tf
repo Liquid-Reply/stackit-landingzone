@@ -7,10 +7,11 @@ resource "stackit_resourcemanager_project" "this" {
   owner_email         = var.owner_email
   labels = merge(
     {
-      networkArea = var.network_area_id
-      environment = var.environment
-      team        = var.team
-      managed_by  = "terraform"
+      networkArea      = var.network_area_id
+      environment      = var.environment
+      team             = var.team
+      managed_by       = "terraform"
+      billingReference = var.billing_reference
     },
     var.extra_labels
   )

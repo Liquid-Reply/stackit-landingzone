@@ -30,6 +30,11 @@ variable "hub_project_name" {
   description = "Hub project display name"
 }
 
+variable "billing_reference" {
+  type        = string
+  description = "Billing reference tag applied to the hub project"
+}
+
 # DNS
 variable "root_dns_name" {
   type        = string
@@ -51,6 +56,63 @@ variable "dev_team_emails" {
   type        = list(string)
   default     = []
   description = "Email addresses of dev team members (get reader role on hub)"
+}
+
+# NetBird VPN
+variable "enable_netbird" {
+  type        = bool
+  default     = false
+  description = "Enable NetBird VPN server. Set to true after hub project exists (two-apply pattern)."
+}
+
+variable "netbird_machine_type" {
+  type        = string
+  default     = "g2i.1"
+  description = "NetBird server VM type (docker-compose stack needs ~2 vCPU / 4 GB)"
+}
+
+variable "netbird_image_id" {
+  type        = string
+  default     = ""
+  description = "OS image UUID for NetBird server (Ubuntu 24.04)"
+}
+
+variable "netbird_ssh_public_key" {
+  type        = string
+  default     = ""
+  description = "SSH public key for emergency access to NetBird server"
+}
+
+variable "netbird_setup_key" {
+  type        = string
+  default     = ""
+  sensitive   = true
+  description = "NetBird setup key for spoke bastion registration. Create in the NetBird dashboard after initial deployment."
+}
+
+variable "netbird_pat" {
+  type        = string
+  default     = ""
+  sensitive   = true
+  description = "NetBird personal access token for Terraform provider. Create in the NetBird dashboard after initial deployment."
+}
+
+variable "netbird_allowed_ssh_cidrs" {
+  type        = list(string)
+  default     = []
+  description = "CIDRs allowed to SSH into the NetBird server (admin access only)"
+}
+
+variable "netbird_allowed_vpn_cidrs" {
+  type        = list(string)
+  default     = ["0.0.0.0/0"]
+  description = "CIDRs allowed to access NetBird VPN services (443/tcp, 3478/udp)"
+}
+
+variable "netbird_letsencrypt_email" {
+  type        = string
+  default     = ""
+  description = "Email for Let's Encrypt certificate on NetBird domain"
 }
 
 # Organization membership
