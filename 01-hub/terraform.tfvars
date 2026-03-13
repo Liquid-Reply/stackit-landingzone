@@ -24,7 +24,7 @@ platform_team_emails = []
 enable_netbird            = true
 netbird_machine_type      = "g2i.1"
 netbird_image_id          = "fb5b3fa8-5e20-478a-929a-2b7da1676b18"
-netbird_ssh_public_key    = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC8t+0p2Y7PoTcSaVlgXGO6JOY/oOhsQ/WYd1hpIJ2phTqZw2STcGkf5I2RiTCak7HiLeUrUr+MtA/Spel0dNAZvlHGIMvPrJ3u3/u0bCXGv52DBXanwY9C97gA3UPdTktxsZdgodgSjQvQMzkBd4E5mtFlEKpdLMpG5n9LJL7rnH/vFIr3AO4tHe/26svixcLOA2z5E1uCaAkvMuXUaZK7vgpQBgdWK95k8/342C/fc57Z8orc+A/6oiqiAZg1v6dKC56ZqdVD16cHZUv0rFnpO9MkzgzokLlIiKcykz174v+xKNloBnjdmuIYGRcbIJ6ReZkdkX5dXvGz8yssCh9sGSOkOS6zsOHDSXWlrtcLOdLvKPXv4Lbo/qXYjBwYZEas78/x6AgPgRmYGMgyjtXYM1zvyaFWkgm7JQtFClvQftShL1DLT29KpBpxYZTHwPb+8evqKJKWmd8qmHDwd3KDwvlgWHLCcW35h1Ocw0oHpJWRLr+BSvZ/OMxRDpGIPkU= max@max"
+netbird_ssh_public_key    = ""
 netbird_allowed_ssh_cidrs = ["89.182.77.0/24"]
 netbird_allowed_vpn_cidrs = ["89.182.77.0/24"]
 netbird_letsencrypt_email = "ma.schmidt@reply.de"
