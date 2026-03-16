@@ -25,13 +25,13 @@ variable "environment" {
 
 variable "network_area_id" {
   type        = string
-  description = "Environment SNA ID — team project joins this network area via label"
+  description = "Environment SNA ID - team project joins this network area via label"
 }
 
-variable "hub_cidr" {
+variable "spoke_cidr" {
   type        = string
   default     = "10.0.0.0/8"
-  description = "Spoke network CIDR for SG ingress rules (allows spoke bastion/observability access)"
+  description = "Spoke network CIDR for SG ingress rules (allows spoke gateway/observability access)"
 }
 
 variable "role_assignments" {
@@ -46,7 +46,7 @@ variable "role_assignments" {
 variable "sa_cicd_email" {
   type        = string
   default     = ""
-  description = "Hub CI/CD service account email (gets editor role)"
+  description = "CI/CD service account email (gets editor role). Leave empty if using folder-level inheritance."
 }
 
 variable "sa_monitoring_email" {
@@ -73,7 +73,7 @@ variable "team_editor_permissions" {
   description = "Permission list for the custom team-editor role. When set, team members requesting 'editor' get this restricted role instead of the built-in editor. Generate with: ./scripts/generate-team-role-permissions.sh"
 }
 
-# Firewall — additional ingress rules requested by teams (approved via PR)
+# Firewall - additional ingress rules requested by teams (approved via PR)
 variable "firewall_rules" {
   type = list(object({
     name     = string

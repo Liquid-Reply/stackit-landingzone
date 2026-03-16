@@ -1,10 +1,10 @@
-# SSH key pair
+# SSH key pair (emergency access)
 resource "stackit_key_pair" "this" {
   name       = "${var.name}-keypair"
   public_key = var.ssh_public_key
 }
 
-# Network interface on the spoke network
+# Network interface
 resource "stackit_network_interface" "this" {
   project_id         = var.project_id
   network_id         = var.network_id
@@ -31,7 +31,7 @@ resource "stackit_server" "this" {
   network_interfaces = [stackit_network_interface.this.network_interface_id]
 }
 
-# Public IP — only when direct access is needed (disabled for VPN-only peers)
+# Public IP - only when direct access is needed (disabled for VPN-only peers)
 resource "stackit_public_ip" "this" {
   count                = var.enable_public_ip ? 1 : 0
   project_id           = var.project_id
@@ -46,7 +46,7 @@ resource "stackit_security_group" "this" {
   labels     = { role = var.name }
 }
 
-# SSH ingress — only when public IP is enabled
+# SSH ingress - only when public IP is enabled
 resource "stackit_security_group_rule" "ssh_ingress" {
   for_each = var.enable_public_ip ? toset(var.allowed_ssh_cidrs) : toset([])
 

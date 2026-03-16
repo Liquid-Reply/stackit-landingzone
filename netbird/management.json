@@ -1,0 +1,51 @@
+{
+    "Stuns": [
+        {
+            "Proto": "udp",
+            "URI": "stun:netbird.192.168.178.97.nip.io:3478"
+        }
+    ],
+    "Relay": {
+        "Addresses": ["rels://netbird.192.168.178.97.nip.io:443"],
+        "CredentialsTTL": "24h",
+        "Secret": "D3JNJ/4cZazKfTygZa3i9rwnIU/Di6s3a3PLDwE4KhU"
+    },
+    "Signal": {
+        "Proto": "https",
+        "URI": "netbird.192.168.178.97.nip.io:443"
+    },
+    "HttpConfig": {
+        "AuthIssuer": "https://netbird.192.168.178.97.nip.io",
+        "AuthAudience": "362757291121901572",
+        "OIDCConfigEndpoint":"https://netbird.192.168.178.97.nip.io/.well-known/openid-configuration"
+    },
+    "IdpManagerConfig": {
+        "ManagerType": "zitadel",
+        "ClientConfig": {
+            "Issuer": "https://netbird.192.168.178.97.nip.io",
+            "TokenEndpoint": "https://netbird.192.168.178.97.nip.io/oauth/v2/token",
+            "ClientID": "netbird-service-account",
+            "ClientSecret": "31eJ3egjT40vUf3sjcYhUMKmVKrVjWWPZQoScX85rXYng2WaUZgdT0dUE0CuRpsq",
+            "GrantType": "client_credentials"
+        },
+        "ExtraConfig": {
+            "ManagementEndpoint": "https://netbird.192.168.178.97.nip.io/management/v1"
+        }
+    },
+  "DeviceAuthorizationFlow": {
+      "Provider": "hosted",
+      "ProviderConfig": {
+          "Audience": "362757293017726980",
+          "ClientID": "362757293017726980",
+          "Scope": "openid"
+      }
+    },
+    "PKCEAuthorizationFlow": {
+        "ProviderConfig": {
+            "Audience": "362757293017726980",
+            "ClientID": "362757293017726980",
+            "Scope": "openid profile email offline_access",
+            "RedirectURLs": ["http://localhost:53000/","http://localhost:54000/"]
+        }
+    }
+}

@@ -1,5 +1,5 @@
 # -----------------------------------------------------------------------------
-# Project — Attached to SNA via networkArea label
+# Project - Attached to SNA via networkArea label
 # -----------------------------------------------------------------------------
 resource "stackit_resourcemanager_project" "this" {
   parent_container_id = var.parent_container_id
@@ -18,7 +18,7 @@ resource "stackit_resourcemanager_project" "this" {
 }
 
 # -----------------------------------------------------------------------------
-# Routed Network — Inherits SNA connectivity to hub
+# Routed Network - Inherits SNA connectivity to hub
 # -----------------------------------------------------------------------------
 resource "stackit_network" "this" {
   project_id = stackit_resourcemanager_project.this.project_id
@@ -28,13 +28,13 @@ resource "stackit_network" "this" {
 }
 
 # -----------------------------------------------------------------------------
-# Security Groups — Default guardrails
+# Security Groups - Default guardrails
 # -----------------------------------------------------------------------------
 
-# Allow HTTPS from hub
+# Allow HTTPS from spoke
 resource "stackit_security_group" "https_from_hub" {
   project_id = stackit_resourcemanager_project.this.project_id
-  name       = "${var.project_name}-allow-https-from-hub"
+  name       = "${var.project_name}-allow-https-from-spoke"
   labels     = { team = var.team }
 }
 
@@ -43,7 +43,7 @@ resource "stackit_security_group_rule" "https_from_hub" {
   security_group_id = stackit_security_group.https_from_hub.security_group_id
   direction         = "ingress"
   ether_type        = "IPv4"
-  ip_range          = var.hub_cidr
+  ip_range          = var.spoke_cidr
 
   port_range = {
     min = 443
@@ -55,10 +55,10 @@ resource "stackit_security_group_rule" "https_from_hub" {
   }
 }
 
-# Allow SSH from hub bastion
+# Allow SSH from spoke gateway
 resource "stackit_security_group" "ssh_from_hub" {
   project_id = stackit_resourcemanager_project.this.project_id
-  name       = "${var.project_name}-allow-ssh-from-hub"
+  name       = "${var.project_name}-allow-ssh-from-spoke"
   labels     = { team = var.team }
 }
 
@@ -67,7 +67,7 @@ resource "stackit_security_group_rule" "ssh_from_hub" {
   security_group_id = stackit_security_group.ssh_from_hub.security_group_id
   direction         = "ingress"
   ether_type        = "IPv4"
-  ip_range          = var.hub_cidr
+  ip_range          = var.spoke_cidr
 
   port_range = {
     min = 22
@@ -82,7 +82,7 @@ resource "stackit_security_group_rule" "ssh_from_hub" {
 # Note: STACKIT auto-creates a default "allow all egress" rule on security groups.
 
 # -----------------------------------------------------------------------------
-# Firewall — Additional ingress rules requested by teams (approved via PR)
+# Firewall - Additional ingress rules requested by teams (approved via PR)
 # Each rule gets its own SG so it can be individually attached to servers.
 # -----------------------------------------------------------------------------
 resource "stackit_security_group" "firewall" {
@@ -113,7 +113,7 @@ resource "stackit_security_group_rule" "firewall" {
 }
 
 # -----------------------------------------------------------------------------
-# Custom Role — Restricted "editor" without public IP permissions
+# Custom Role - Restricted "editor" without public IP permissions
 # -----------------------------------------------------------------------------
 resource "stackit_authorization_project_custom_role" "team_editor" {
   count = length(var.team_editor_permissions) > 0 ? 1 : 0
@@ -137,7 +137,7 @@ locals {
 }
 
 # -----------------------------------------------------------------------------
-# IAM — Role assignments for team members + hub service accounts
+# IAM - Role assignments for team members + hub service accounts
 # -----------------------------------------------------------------------------
 resource "stackit_authorization_project_role_assignment" "team_members" {
   for_each = { for ra in local.resolved_role_assignments : ra.key => ra }
@@ -167,7 +167,7 @@ resource "stackit_authorization_project_role_assignment" "sa_monitoring" {
 }
 
 # -----------------------------------------------------------------------------
-# DNS — Delegated sub-zone per project (self-service via STACKIT portal)
+# DNS - Delegated sub-zone per project (self-service via STACKIT portal)
 # Creates <project-name>.<env>.<domain> zone in the team's project.
 # Teams can then manage their own records via the portal or Terraform.
 #

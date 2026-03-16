@@ -19,7 +19,7 @@ resource "stackit_public_ip" "this" {
   labels               = { role = "netbird" }
 }
 
-# NetBird server — runs management + signal + relay + dashboard via docker-compose
+# NetBird server - runs management + signal + relay + dashboard via docker-compose
 resource "stackit_server" "this" {
   project_id        = var.project_id
   name              = var.name
@@ -43,7 +43,7 @@ resource "stackit_server" "this" {
 }
 
 # -----------------------------------------------------------------------------
-# Security group — NetBird requires TCP 80/443 + UDP 3478
+# Security group - NetBird requires TCP 80/443 + UDP 3478
 # -----------------------------------------------------------------------------
 resource "stackit_security_group" "this" {
   project_id = var.project_id
@@ -51,7 +51,7 @@ resource "stackit_security_group" "this" {
   labels     = { role = "netbird" }
 }
 
-# TCP 80 — HTTP for Let's Encrypt ACME HTTP-01 challenge validation.
+# TCP 80 - HTTP for Let's Encrypt ACME HTTP-01 challenge validation.
 # Must be open to 0.0.0.0/0 because LE validators connect from arbitrary IPs.
 resource "stackit_security_group_rule" "http_ingress" {
   project_id        = var.project_id
@@ -63,7 +63,7 @@ resource "stackit_security_group_rule" "http_ingress" {
   protocol   = { name = "tcp" }
 }
 
-# TCP 443 — HTTPS (management API, signal server, dashboard)
+# TCP 443 - HTTPS (management API, signal server, dashboard)
 resource "stackit_security_group_rule" "https_ingress" {
   for_each = toset(var.allowed_vpn_cidrs)
 
@@ -71,13 +71,13 @@ resource "stackit_security_group_rule" "https_ingress" {
   security_group_id = stackit_security_group.this.security_group_id
   direction         = "ingress"
   ether_type        = "IPv4"
-  #ip_range          = each.value
+  ip_range          = each.value
 
   port_range = { min = 443, max = 443 }
   protocol   = { name = "tcp" }
 }
 
-# UDP 3478 — STUN/TURN relay
+# UDP 3478 - STUN/TURN relay
 resource "stackit_security_group_rule" "turn_ingress" {
   for_each = toset(var.allowed_vpn_cidrs)
 
@@ -91,7 +91,7 @@ resource "stackit_security_group_rule" "turn_ingress" {
   protocol   = { name = "udp" }
 }
 
-# TCP 22 — SSH for emergency admin access (restricted CIDRs)
+# TCP 22 - SSH for emergency admin access (restricted CIDRs)
 resource "stackit_security_group_rule" "ssh_ingress" {
   for_each = toset(var.allowed_ssh_cidrs)
 

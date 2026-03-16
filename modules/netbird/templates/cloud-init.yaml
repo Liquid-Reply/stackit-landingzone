@@ -18,7 +18,7 @@ runcmd:
   # Install docker-compose plugin
   - apt-get install -y docker-compose-plugin
 
-  # Run NetBird quickstart (without Zitadel — uses built-in Dex IdP)
+  # Run NetBird quickstart (without Zitadel - uses built-in Dex IdP)
   - mkdir -p /opt/netbird
   - |
     export NETBIRD_DOMAIN="${netbird_domain}"

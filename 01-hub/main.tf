@@ -2,7 +2,7 @@
 # Organization Folders
 # -----------------------------------------------------------------------------
 
-# Platform folder — contains hub project and environment spokes
+# Platform folder - contains hub project and environment spokes
 module "folder_platform" {
   source = "../modules/folder"
 
@@ -12,7 +12,7 @@ module "folder_platform" {
   labels              = { managed_by = "terraform" }
 }
 
-# Teams folder — contains self-service team projects
+# Teams folder - contains self-service team projects
 module "folder_teams" {
   source = "../modules/folder"
 
@@ -24,7 +24,7 @@ module "folder_teams" {
 
 # -----------------------------------------------------------------------------
 # Hub Project (under platform/ folder)
-# Pure management project — no network, no SNA attachment.
+# Pure management project - no network, no SNA attachment.
 # Hosts DNS root zone, service accounts, and folder-level IAM.
 # -----------------------------------------------------------------------------
 module "hub_project" {
@@ -37,7 +37,7 @@ module "hub_project" {
 }
 
 # -----------------------------------------------------------------------------
-# DNS — Root zone
+# DNS - Root zone
 # -----------------------------------------------------------------------------
 module "root_dns" {
   source = "../modules/dns"
@@ -50,7 +50,7 @@ module "root_dns" {
 }
 
 # -----------------------------------------------------------------------------
-# NetBird VPN — Self-hosted management server
+# NetBird VPN - Self-hosted management server
 # Isolated non-routed network (hub has no SNA).
 # Gated by enable_netbird (two-apply: hub project must exist first).
 # -----------------------------------------------------------------------------
@@ -87,10 +87,11 @@ module "netbird" {
 
 
 # -----------------------------------------------------------------------------
-# Centralized IAM — Service accounts for automation
+# Centralized IAM - Service accounts for automation
 # -----------------------------------------------------------------------------
 
-# CI/CD service account — used by pipelines to deploy into spoke projects
+# CI/CD service account - used by pipelines to deploy platform infrastructure (hub + spokes)
+# NOT assigned to team projects - teams bring their own CI/CD credentials.
 module "sa_cicd" {
   source = "../modules/service-account"
 
@@ -101,7 +102,7 @@ module "sa_cicd" {
   key_rotation_days = 80
 }
 
-# Monitoring service account — used by observability to scrape spoke metrics
+# Monitoring service account - used by observability to scrape spoke metrics
 module "sa_monitoring" {
   source = "../modules/service-account"
 
@@ -112,7 +113,7 @@ module "sa_monitoring" {
   key_rotation_days = 80
 }
 
-# Hub project role assignments — service accounts only
+# Hub project role assignments - service accounts only
 # (owner_email already gets owner at project creation, no need to re-assign)
 module "hub_roles" {
   source = "../modules/role-assignment"
@@ -135,7 +136,7 @@ module "hub_roles" {
 }
 
 # -----------------------------------------------------------------------------
-# Folder-Level IAM — Roles inherited by ALL child projects
+# Folder-Level IAM - Roles inherited by ALL child projects
 # -----------------------------------------------------------------------------
 
 # Platform folder: platform team gets owner on all spokes
@@ -147,14 +148,9 @@ resource "stackit_authorization_folder_role_assignment" "platform_folder_owners"
   subject     = each.value
 }
 
-# Teams folder: CI/CD SA gets editor on all team projects (inherited)
-resource "stackit_authorization_folder_role_assignment" "teams_folder_cicd" {
-  resource_id = module.folder_teams.folder_id
-  role        = "editor"
-  subject     = module.sa_cicd.email
-}
-
 # Teams folder: Monitoring SA gets reader on all team projects (inherited)
+# Note: CI/CD SA is NOT assigned at folder level - teams bring their own CI/CD credentials.
+# The platform sa-cicd only manages hub + spoke infrastructure.
 resource "stackit_authorization_folder_role_assignment" "teams_folder_monitoring" {
   resource_id = module.folder_teams.folder_id
   role        = "reader"
@@ -162,7 +158,7 @@ resource "stackit_authorization_folder_role_assignment" "teams_folder_monitoring
 }
 
 # -----------------------------------------------------------------------------
-# Organization Membership — Invite users before they can get project/folder roles
+# Organization Membership - Invite users before they can get project/folder roles
 # -----------------------------------------------------------------------------
 resource "stackit_authorization_organization_role_assignment" "org_members" {
   for_each = { for m in var.org_members : m.email => m }

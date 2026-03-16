@@ -14,12 +14,12 @@ billing_reference        = "Liquid-internal"
 root_dns_name     = "stackit-lz-demo.org"
 dns_contact_email = "ma.schmidt@reply.de"
 
-# IAM — Platform team members (get owner on hub, editor on spokes)
+# IAM - Platform team members (get owner on hub, editor on spokes)
 #platform_team_emails = ["ma.schmidt@reply.de"]
 platform_team_emails = []
 #dev_team_emails      = ["dev1@example.com", "dev2@example.com"]
 
-# NetBird VPN — self-hosted management server in the hub
+# NetBird VPN - self-hosted management server in the hub
 # Set enable_netbird = true after hub project exists (two-apply pattern)
 enable_netbird            = true
 netbird_machine_type      = "g2i.1"
@@ -29,7 +29,7 @@ netbird_allowed_ssh_cidrs = ["89.182.77.0/24"]
 netbird_allowed_vpn_cidrs = ["89.182.77.0/24"]
 netbird_letsencrypt_email = "ma.schmidt@reply.de"
 
-# NetBird keys — create these in the NetBird dashboard after initial deployment:
+# NetBird keys - create these in the NetBird dashboard after initial deployment:
 # 1. Deploy with enable_netbird = true (creates VM + runs getting-started.sh)
 # 2. Log into https://netbird.<public-ip>.nip.io, create admin account
 # 3. Create a setup key (Settings → Setup Keys) and paste below
@@ -38,7 +38,7 @@ netbird_letsencrypt_email = "ma.schmidt@reply.de"
 netbird_setup_key = ""
 netbird_pat       = ""
 
-# Organization membership — users must be invited to the org before they can
+# Organization membership - users must be invited to the org before they can
 # receive roles on projects or folders. Role defaults to "reader".
 org_members = [
   #{ email = "ma.schmidt@reply.de",    role = "owner"  },

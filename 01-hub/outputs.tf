@@ -67,5 +67,5 @@ output "netbird_pat" {
 output "netbird_setup_key" {
   value       = var.netbird_setup_key
   sensitive   = true
-  description = "NetBird setup key for spoke bastion registration"
+  description = "NetBird setup key for spoke gateway registration"
 }

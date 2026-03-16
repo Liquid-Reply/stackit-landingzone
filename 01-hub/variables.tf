@@ -87,7 +87,7 @@ variable "netbird_setup_key" {
   type        = string
   default     = ""
   sensitive   = true
-  description = "NetBird setup key for spoke bastion registration. Create in the NetBird dashboard after initial deployment."
+  description = "NetBird setup key for spoke gateway registration. Create in the NetBird dashboard after initial deployment."
 }
 
 variable "netbird_pat" {

@@ -1,11 +1,11 @@
 variable "project_id" {
   type        = string
-  description = "Hub project ID"
+  description = "Project ID"
 }
 
 variable "name" {
   type        = string
-  description = "Bastion server name"
+  description = "Server name"
 }
 
 variable "machine_type" {
@@ -21,12 +21,12 @@ variable "image_id" {
 
 variable "network_id" {
   type        = string
-  description = "Hub network ID to attach bastion to"
+  description = "Network ID to attach the server to"
 }
 
 variable "ssh_public_key" {
   type        = string
-  description = "SSH public key for bastion access"
+  description = "SSH public key for server access"
 }
 
 variable "allowed_ssh_cidrs" {
@@ -43,7 +43,7 @@ variable "enable_public_ip" {
 
 variable "availability_zone" {
   type        = string
-  description = "Availability zone for the bastion server"
+  description = "Availability zone for the server"
 }
 
 variable "boot_volume_size" {

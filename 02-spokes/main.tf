@@ -1,5 +1,5 @@
 # -----------------------------------------------------------------------------
-# Remote State — Read hub outputs
+# Remote State - Read hub outputs
 # -----------------------------------------------------------------------------
 data "terraform_remote_state" "hub" {
   backend = "s3"
@@ -25,7 +25,7 @@ locals {
 }
 
 # -----------------------------------------------------------------------------
-# Network Area (SNA) — Per-environment, provides L3 isolation between stages
+# Network Area (SNA) - Per-environment, provides L3 isolation between stages
 # Each environment gets its own SNA so dev/staging/prod cannot route to each other.
 # -----------------------------------------------------------------------------
 module "network_area" {
@@ -40,8 +40,8 @@ module "network_area" {
 }
 
 # -----------------------------------------------------------------------------
-# Spoke Project — Attached to its own environment SNA
-# Acts as the "mini-hub" for this environment: bastion, observability, DNS sub-zone
+# Spoke Project - Attached to its own environment SNA
+# Acts as the "mini-hub" for this environment: gateway, observability, DNS sub-zone
 # -----------------------------------------------------------------------------
 module "spoke_project" {
   source = "../modules/project"
@@ -58,7 +58,7 @@ module "spoke_project" {
 }
 
 # -----------------------------------------------------------------------------
-# Spoke Network — Routed, first network in this environment's SNA
+# Spoke Network - Routed, first network in this environment's SNA
 # -----------------------------------------------------------------------------
 module "spoke_network" {
   source = "../modules/networking"
@@ -95,7 +95,7 @@ module "spoke_sg_https" {
   ]
 }
 
-# Allow SSH from spoke bastion only (within same SNA)
+# Allow SSH from spoke gateway only (within same SNA)
 module "spoke_sg_ssh" {
   source = "../modules/security-groups"
 
@@ -119,7 +119,7 @@ module "spoke_sg_ssh" {
 # so we don't need a dedicated egress security group.
 
 # -----------------------------------------------------------------------------
-# DNS — Environment sub-zone (e.g., dev.example.com)
+# DNS - Environment sub-zone (e.g., dev.example.com)
 # Team projects create delegated zones under this:
 #   <project>.<env>.<domain> (e.g., team-alpha.dev.example.com)
 # -----------------------------------------------------------------------------
@@ -133,7 +133,7 @@ resource "stackit_dns_record_set" "env_ns" {
   records    = ["ns1.stackit.cloud.", "ns2.stackit.zone."]
 }
 
-# Environment DNS sub-zone — lives in the spoke project (spoke owns its DNS)
+# Environment DNS sub-zone - lives in the spoke project (spoke owns its DNS)
 resource "stackit_dns_zone" "env" {
   project_id    = module.spoke_project.project_id
   name          = "${var.environment} environment"
@@ -145,7 +145,7 @@ resource "stackit_dns_zone" "env" {
 }
 
 # -----------------------------------------------------------------------------
-# Observability — Per-environment monitoring instance
+# Observability - Per-environment monitoring instance
 # Gated by enable_services (provider validates plan_name at plan time)
 # -----------------------------------------------------------------------------
 # module "observability" {
@@ -180,29 +180,29 @@ resource "stackit_dns_zone" "env" {
 # }
 
 # -----------------------------------------------------------------------------
-# NetBird Peer / Bastion — Per-environment subnet router
-# When NetBird is enabled, runs as a VPN peer (no public IP).
+# Gateway - Per-environment subnet router (NetBird VPN peer) or SSH bastion
+# When NetBird is enabled, runs as a VPN peer and subnet router (no public IP).
 # When NetBird is disabled, acts as a traditional bastion with public IP + SSH.
 # Gated by enable_services (requires project to exist)
 # -----------------------------------------------------------------------------
-module "bastion" {
-  source = "../modules/bastion"
+module "gateway" {
+  source = "../modules/gateway"
   count  = var.enable_services ? 1 : 0
 
   project_id        = module.spoke_project.project_id
-  name              = "${var.environment}-bastion"
-  machine_type      = var.bastion_machine_type
-  image_id          = var.bastion_image_id
+  name              = "${var.environment}-gateway"
+  machine_type      = var.gateway_machine_type
+  image_id          = var.gateway_image_id
   network_id        = module.spoke_network.network_id
   ssh_public_key    = var.ssh_public_key
   allowed_ssh_cidrs = var.allowed_ssh_cidrs
   availability_zone = "${var.region}-1"
   enable_public_ip  = !var.enable_netbird_agent
 
-  # NetBird agent — installs and registers with the hub's NetBird management server
+  # NetBird agent - installs and registers with the hub's NetBird management server
   # Setup key is created by the NetBird provider below (self-registration)
   user_data = var.enable_netbird_agent ? templatefile(
-    "${path.module}/templates/bastion-netbird.yaml",
+    "${path.module}/templates/gateway-netbird.yaml",
     {
       netbird_setup_key      = netbird_setup_key.env[0].key
       netbird_management_url = local.hub.netbird_management_url
@@ -211,18 +211,18 @@ module "bastion" {
 }
 
 # -----------------------------------------------------------------------------
-# NetBird Self-Registration — Each spoke registers itself in the NetBird control plane
+# NetBird Self-Registration - Each spoke registers itself in the NetBird control plane
 # Creates a group, setup key, and route for this environment's subnet.
 # Gated by enable_netbird_agent (requires hub NetBird server + PAT to be available).
 # -----------------------------------------------------------------------------
 
-# Group for this environment's peers (bastions)
+# Group for this environment's peers (gateways)
 resource "netbird_group" "env" {
   count = var.enable_netbird_agent ? 1 : 0
   name  = var.environment
 }
 
-# Reusable setup key — auto-assigns peers to the environment group
+# Reusable setup key - auto-assigns peers to the environment group
 resource "netbird_setup_key" "env" {
   count          = var.enable_netbird_agent ? 1 : 0
   name           = "${var.environment}-setup-key"
@@ -232,14 +232,14 @@ resource "netbird_setup_key" "env" {
   expiry_seconds = 31536000 # 1 year
 }
 
-# Network — represents this environment's SNA subnet in NetBird
+# Network - represents this environment's SNA subnet in NetBird
 resource "netbird_network" "env" {
   count       = var.enable_netbird_agent ? 1 : 0
   name        = "${var.environment}-network"
   description = "Network for ${var.environment} spoke SNA subnet"
 }
 
-# Network resource — the SNA subnet CIDR reachable via the bastion
+# Network resource - the SNA subnet CIDR reachable via the gateway
 resource "netbird_network_resource" "env" {
   count      = var.enable_netbird_agent ? 1 : 0
   network_id = netbird_network.env[0].id
@@ -248,7 +248,7 @@ resource "netbird_network_resource" "env" {
   groups     = [netbird_group.env[0].id]
 }
 
-# Network router — bastion peer group routes traffic into the SNA
+# Network router - gateway peer group routes traffic into the SNA
 resource "netbird_network_router" "env" {
   count       = var.enable_netbird_agent ? 1 : 0
   network_id  = netbird_network.env[0].id
@@ -258,7 +258,7 @@ resource "netbird_network_router" "env" {
   enabled     = true
 }
 
-# Policy — allow all peers to reach this environment's network
+# Policy - allow all peers to reach this environment's network
 resource "netbird_policy" "env" {
   count       = var.enable_netbird_agent ? 1 : 0
   name        = "${var.environment}-default-access"
@@ -279,7 +279,7 @@ resource "netbird_policy" "env" {
   }
 }
 
-# DNS — Route queries for the landing zone domain through STACKIT nameservers
+# DNS - Route queries for the landing zone domain through STACKIT nameservers
 # VPN clients can resolve e.g. myapp.dev.stackit-lz-demo.org even though
 # the domain is not registered publicly (STACKIT DNS zones are authoritative).
 resource "netbird_nameserver_group" "stackit_dns" {
@@ -300,7 +300,7 @@ resource "netbird_nameserver_group" "stackit_dns" {
 }
 
 # -----------------------------------------------------------------------------
-# IAM — Spoke project role assignments
+# IAM - Spoke project role assignments
 # -----------------------------------------------------------------------------
 module "spoke_roles" {
   source = "../modules/role-assignment"
