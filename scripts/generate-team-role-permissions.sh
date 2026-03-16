@@ -23,16 +23,16 @@ set -euo pipefail
 # permission names in your environment.
 #
 DENIED_PERMISSIONS=(
-  # Public IP — prevent teams from exposing workloads directly to the internet
+  # Public IP - prevent teams from exposing workloads directly to the internet
   "iaas.public-ip.create"
   "iaas.public-ip.delete"
   "iaas.public-ip.update"
 
-  # Server public IP association — prevent attaching/detaching public IPs on VMs
+  # Server public IP association - prevent attaching/detaching public IPs on VMs
   "iaas.server.public-ip.add"
   "iaas.server.public-ip.remove"
 
-  # Security groups — prevent teams from modifying SG rules (cross-env isolation)
+  # Security groups - prevent teams from modifying SG rules (cross-env isolation)
   "iaas.security-group.create"
   "iaas.security-group.delete"
   "iaas.security-group.update"
@@ -40,14 +40,14 @@ DENIED_PERMISSIONS=(
   "iaas.security-group.rule.delete"
   "iaas.security-group.rule.update"
 
-  # IAM — prevent teams from escalating their own permissions
+  # IAM - prevent teams from escalating their own permissions
   "iam.member.add"
   "iam.member.remove"
   "iam.role.add"
   "iam.role.edit"
   "iam.role.remove"
 
-  # Service accounts — prevent teams from creating SAs that could escalate privileges
+  # Service accounts - prevent teams from creating SAs that could escalate privileges
   "iam.service-account.create"
   "iam.service-account.delete"
   "iam.service-account.impersonate"

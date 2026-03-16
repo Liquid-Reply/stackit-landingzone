@@ -1,11 +1,11 @@
 # Staging Environment
 #
 # First apply:  leave enable_services = false (creates project, SNA, network, IAM)
-# Second apply: set enable_services = true  (creates observability, bastion)
+# Second apply: set enable_services = true  (creates observability, gateway)
 
 region                   = "eu01"
-service_account_key_path = "/Users/maxschmidt/Documents/git/liquid/stackit-landingzone/.stackit/sa-key.json"
-private_key_path         = "/Users/maxschmidt/Documents/git/liquid/stackit-landingzone/.stackit/sa-key.pem"
+service_account_key_path = "sa-key.json"
+private_key_path         = "sa-key.pem"
 organization_id          = "825158dd-6d82-4fa9-8891-c59f2d1f672c"
 
 environment       = "staging"
@@ -16,7 +16,7 @@ network_name    = "staging-network"
 dns_subdomain   = "staging"
 enable_services = false
 
-# SNA — Staging environment IP space (isolated from dev/prod)
+# SNA - Staging environment IP space (isolated from dev/prod)
 sna_network_ranges        = [{ prefix = "10.1.0.0/16" }]
 sna_transfer_network      = "10.255.1.0/24"
 sna_default_prefix_length = 24
@@ -26,18 +26,18 @@ observability_plan     = "Observability-Starter-EU01"
 metrics_retention_days = 90
 logs_retention_days    = 30
 
-# Bastion
-bastion_machine_type = "g2i.1"
-bastion_image_id     = "fb5b3fa8-5e20-478a-929a-2b7da1676b18"
+# Gateway (subnet router / bastion)
+gateway_machine_type = "g2i.1"
+gateway_image_id     = "fb5b3fa8-5e20-478a-929a-2b7da1676b18"
 ssh_public_key       = ""
 allowed_ssh_cidrs    = ["203.0.113.0/24"]
 
 scrape_targets = []
 
-# NetBird VPN agent — set to true after NetBird server is running and hub PAT is retrieved
+# NetBird VPN agent - set to true after NetBird server is running and hub PAT is retrieved
 enable_netbird_agent = false
 
-# IAM — Devs get reader on staging, only platform team can deploy
+# IAM - Devs get reader on staging, only platform team can deploy
 project_role_assignments = [
   # { key = "dev1-reader", subject = "dev1@example.com", role = "reader" },
   # { key = "dev2-reader", subject = "dev2@example.com", role = "reader" },

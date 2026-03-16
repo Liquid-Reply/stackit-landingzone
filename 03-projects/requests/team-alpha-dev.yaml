@@ -1,4 +1,4 @@
-# Project Request: Team Alpha — Development
+# Project Request: Team Alpha - Development
 # To request a new project, copy this template and submit a PR.
 
 project_name: "team-alpha-dev"
@@ -22,11 +22,11 @@ extra_labels:
   cost_center: "liquid-123"
   application: "liquid-blog"
 
-# DNS — each project automatically gets a delegated zone:
+# DNS - each project automatically gets a delegated zone:
 #   team-alpha-dev.dev.<your-domain> (e.g., team-alpha-dev.dev.example.com)
 # Teams can then self-manage records via the STACKIT portal.
 
-# Firewall — additional ingress rules (reviewed and approved by platform team)
+# Firewall - additional ingress rules (reviewed and approved by platform team)
 # Hub SSH + HTTPS ingress is always allowed. Add rules here for cross-project access.
 # firewall_rules:
 #   - name: "allow-beta-api"

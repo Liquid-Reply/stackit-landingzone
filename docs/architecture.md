@@ -1,4 +1,4 @@
-# STACKIT Landing Zone — Architecture
+# STACKIT Landing Zone - Architecture
 
 ## High-Level Overview
 
@@ -24,15 +24,15 @@ graph TB
             end
 
             subgraph sna_dev["SNA: dev (10.0.0.0/16)"]
-                spoke_dev["Spoke: dev<br/><i>Bastion + Observability</i><br/><i>DNS: dev.example.com</i>"]
+                spoke_dev["Spoke: dev<br/><i>Gateway + Observability</i><br/><i>DNS: dev.example.com</i>"]
             end
 
             subgraph sna_stg["SNA: staging (10.1.0.0/16)"]
-                spoke_stg["Spoke: staging<br/><i>Bastion + Observability</i><br/><i>DNS: stg.example.com</i>"]
+                spoke_stg["Spoke: staging<br/><i>Gateway + Observability</i><br/><i>DNS: staging.example.com</i>"]
             end
 
             subgraph sna_prod["SNA: prod (10.2.0.0/16)"]
-                spoke_prod["Spoke: prod<br/><i>Bastion + Observability</i><br/><i>DNS: prod.example.com</i>"]
+                spoke_prod["Spoke: prod<br/><i>Gateway + Observability</i><br/><i>DNS: prod.example.com</i>"]
             end
         end
 
@@ -96,7 +96,7 @@ graph LR
 
 ## Network Isolation
 
-Each environment has its own STACKIT Network Area (SNA), providing **L3-level isolation** between dev, staging, and prod. There is no routing path between environments — isolation is enforced at the network layer, not just by security groups.
+Each environment has its own STACKIT Network Area (SNA), providing **L3-level isolation** between dev, staging, and prod. There is no routing path between environments - isolation is enforced at the network layer, not just by security groups.
 
 ```mermaid
 graph TB
@@ -104,8 +104,8 @@ graph TB
         direction TB
 
         subgraph spoke_dev_net["Spoke: dev (10.0.0.0/24)"]
-            bastion_dev["Bastion"]
-            prom_dev["Observability"]
+            bastion_dev["Gateway"]
+            prom_dev["Observability<br/><i>(planned)</i>"]
         end
 
         subgraph dev_projects["Dev Projects"]
@@ -123,8 +123,8 @@ graph TB
         direction TB
 
         subgraph spoke_prod_net["Spoke: prod (10.2.0.0/24)"]
-            bastion_prod["Bastion"]
-            prom_prod["Observability"]
+            bastion_prod["Gateway"]
+            prom_prod["Observability<br/><i>(planned)</i>"]
         end
 
         subgraph prod_projects["Prod Projects"]
@@ -148,7 +148,7 @@ graph TB
 ```
 
 **How isolation works:**
-- Each environment is a separate L3 routing domain — **no routing path between dev/staging/prod**
+- Each environment is a separate L3 routing domain - **no routing path between dev/staging/prod**
 - SG ingress rules only allow the spoke network's prefix (same-environment traffic)
 - Teams cannot modify security groups (permission denied via custom RBAC)
 - Cross-project access within the same environment requires a `firewall_rules` entry in YAML, approved via PR
@@ -156,7 +156,7 @@ graph TB
 
 ## VPN Access (NetBird)
 
-Self-hosted [NetBird](https://netbird.io/) provides WireGuard-based VPN access to all environments. The management server runs in the hub on an isolated network. Spoke bastions run NetBird agents and are registered as network routers for their environment's subnet. All NetBird resources (groups, setup keys, networks, policies, DNS nameservers) are managed via the NetBird Terraform provider.
+Self-hosted [NetBird](https://netbird.io/) provides WireGuard-based VPN access to all environments. The management server runs in the hub on an isolated network. Spoke gateways run NetBird agents and are registered as network routers for their environment's subnet. All NetBird resources (groups, setup keys, networks, policies, DNS nameservers) are managed via the NetBird Terraform provider.
 
 ```mermaid
 graph TB
@@ -167,15 +167,15 @@ graph TB
     end
 
     subgraph sna_dev["SNA: dev (10.0.0.0/16)"]
-        bastion_dev["dev-bastion<br/><i>NetBird agent</i><br/><i>network: dev-network</i>"]
+        bastion_dev["dev-gateway<br/><i>NetBird agent</i><br/><i>network: dev-network</i>"]
     end
 
     subgraph sna_stg["SNA: staging (10.1.0.0/16)"]
-        bastion_stg["stg-bastion<br/><i>NetBird agent</i><br/><i>network: staging-network</i>"]
+        bastion_stg["staging-gateway<br/><i>NetBird agent</i><br/><i>network: staging-network</i>"]
     end
 
     subgraph sna_prod["SNA: prod (10.2.0.0/16)"]
-        bastion_prod["prod-bastion<br/><i>NetBird agent</i><br/><i>network: prod-network</i>"]
+        bastion_prod["prod-gateway<br/><i>NetBird agent</i><br/><i>network: prod-network</i>"]
     end
 
     user["VPN User<br/><i>NetBird client</i>"]
@@ -195,17 +195,17 @@ graph TB
 
 **How it works:**
 - NetBird management server coordinates WireGuard peer connections (does **not** relay traffic by default)
-- Each spoke bastion registers as a NetBird peer via a setup key and is assigned to its environment group
-- A `netbird_network` + `netbird_network_resource` + `netbird_network_router` advertises each environment's SNA subnet through the bastion peer group
+- Each spoke gateway registers as a NetBird peer via a setup key and is assigned to its environment group
+- A `netbird_network` + `netbird_network_resource` + `netbird_network_router` advertises each environment's SNA subnet through the gateway peer group
 - A per-environment `netbird_policy` controls which peers can reach which networks (environment-level ACL)
-- A `netbird_nameserver_group` routes DNS queries for `<env>.stackit-lz-demo.org` through STACKIT's authoritative nameservers — VPN clients can resolve private DNS records
-- VPN users connect via the NetBird client — traffic flows through WireGuard tunnels directly to bastion peers
-- The overlay network does **not** break SNA L3 isolation — it tunnels through the internet, not through SNA routing
+- A `netbird_nameserver_group` routes DNS queries for `<env>.stackit-lz-demo.org` through STACKIT's authoritative nameservers - VPN clients can resolve private DNS records
+- VPN users connect via the NetBird client - traffic flows through WireGuard tunnels directly to gateway peers
+- The overlay network does **not** break SNA L3 isolation - it tunnels through the internet, not through SNA routing
 
 **Deployment sequence:**
 1. Deploy NetBird server in hub (`enable_netbird = true`, provide `netbird_letsencrypt_email`)
 2. Log into the NetBird dashboard, create a PAT, and set it in hub tfvars (`netbird_api_token`)
-3. Enable agent on spoke bastions (`enable_netbird_agent = true`) — setup keys, networks, policies, and DNS are created automatically via Terraform
+3. Enable agent on spoke gateways (`enable_netbird_agent = true`) - setup keys, networks, policies, and DNS are created automatically via Terraform
 
 ## DNS Delegation
 
@@ -242,11 +242,11 @@ graph TB
     org["STACKIT Organization"]
 
     org --> folder_platform["Folder: platform/<br/><i>Platform team: owner</i><br/><small>inherited by all children</small>"]
-    org --> folder_teams["Folder: teams/<br/><i>SA CI/CD: editor</i><br/><i>SA Monitoring: reader</i><br/><small>inherited by all team projects</small>"]
+    org --> folder_teams["Folder: teams/<br/><i>SA Monitoring: reader</i><br/><small>inherited by all team projects</small>"]
 
     folder_platform --> hub_proj["Hub Project<br/><i>DNS root zone, SAs, NetBird VPN</i><br/><i>(isolated network)</i>"]
-    folder_platform --> spoke_dev_proj["Spoke: dev<br/><i>SNA + Network + DNS sub-zone</i><br/><i>Bastion + Observability</i>"]
-    folder_platform --> spoke_prod_proj["Spoke: prod<br/><i>SNA + Network + DNS sub-zone</i><br/><i>Bastion + Observability</i>"]
+    folder_platform --> spoke_dev_proj["Spoke: dev<br/><i>SNA + Network + DNS sub-zone</i><br/><i>Gateway + Observability</i>"]
+    folder_platform --> spoke_prod_proj["Spoke: prod<br/><i>SNA + Network + DNS sub-zone</i><br/><i>Gateway + Observability</i>"]
 
     folder_teams --> alpha_dev_proj["team-alpha-dev<br/><i>alpha-lead: owner</i><br/><i>alpha-dev1: <b>team-editor</b></i>"]
     folder_teams --> alpha_prod_proj["team-alpha-prod<br/><i>alpha-lead: owner</i><br/><i>alpha-dev1: reader</i>"]
@@ -322,7 +322,7 @@ graph TB
 
     subgraph L2["Layer 2: Spokes (per env)"]
         direction LR
-        l2_desc["SNA, Spoke project, Network, SGs,<br/>DNS sub-zone (NS delegation from hub),<br/>Bastion, Observability"]
+        l2_desc["SNA, Spoke project, Network, SGs,<br/>DNS sub-zone (NS delegation from hub),<br/>Gateway, Observability"]
         l2_state["State: s3://spokes/&lt;env&gt;/"]
     end
 
@@ -350,8 +350,8 @@ graph TB
         direction TB
 
         subgraph spoke["Spoke: dev"]
-            bastion_h["Bastion"]
-            prom_h["Observability<br/><i>Prometheus + Grafana</i>"]
+            bastion_h["Gateway"]
+            prom_h["Observability<br/><i>Prometheus + Grafana (planned)</i>"]
         end
 
         subgraph project["team-alpha-dev &mdash; provisioned by landing zone"]
@@ -402,8 +402,8 @@ graph TB
         direction TB
 
         subgraph spoke["Spoke: prod"]
-            bastion_h["Bastion"]
-            prom_h["Observability<br/><i>Prometheus + Grafana</i>"]
+            bastion_h["Gateway"]
+            prom_h["Observability<br/><i>Prometheus + Grafana (planned)</i>"]
         end
 
         subgraph project["team-alpha-prod &mdash; provisioned by landing zone"]
@@ -461,7 +461,7 @@ Each environment gets its own SNA with a dedicated `/16` IP pool:
 
 ### How SNA Assigns Subnets
 
-When a project with the `networkArea` label creates a `routed = true` network, the SNA automatically allocates the **next available /24** from the pool — you cannot choose a specific subnet.
+When a project with the `networkArea` label creates a `routed = true` network, the SNA automatically allocates the **next available /24** from the pool - you cannot choose a specific subnet.
 
 ```mermaid
 graph TB
@@ -513,11 +513,11 @@ graph TB
 
 ### Important Constraints
 
-- **One SNA per project** — a project can only attach to one network area (single `networkArea` label)
-- **Fixed subnet size** — all networks in an SNA get the same prefix length; you cannot mix /23 and /24
-- **No subnet selection** — STACKIT assigns the next available block automatically
-- **Transfer network reserved** — must not overlap with network ranges
-- **No cross-environment routing** — separate SNAs have no routing path between them (this is the desired isolation)
+- **One SNA per project** - a project can only attach to one network area (single `networkArea` label)
+- **Fixed subnet size** - all networks in an SNA get the same prefix length; you cannot mix /23 and /24
+- **No subnet selection** - STACKIT assigns the next available block automatically
+- **Transfer network reserved** - must not overlap with network ranges
+- **No cross-environment routing** - separate SNAs have no routing path between them (this is the desired isolation)
 
 ## Key Benefits
 
@@ -543,8 +543,8 @@ mindmap
         Automation
             4-layer Terraform architecture
             Reusable modules for consistency
-            CI/CD service account with folder-level access
-            Cross-layer remote state — no manual ID passing
+            CI/CD for platform, teams bring own credentials
+            Cross-layer remote state - no manual ID passing
             Per-environment Prometheus + Grafana
         Sovereign Cloud
             STACKIT: EU data sovereignty

@@ -6,11 +6,11 @@ service_account_key_path = "sa-key.json"
 private_key_path         = "sa-key.pem"
 requests_path            = "requests"
 
-# Custom RBAC — restrict "editor" to exclude public IP + IAM management
+# Custom RBAC - restrict "editor" to exclude public IP + IAM management
 # Generate this list by running: ./scripts/generate-team-role-permissions.sh
 # Leave empty [] to use the built-in "editor" role (no restrictions)
 
-# Deployed spoke environments — add entries as you deploy staging/prod
+# Deployed spoke environments - add entries as you deploy staging/prod
 # Remote state for each is read automatically from s3://lz-tfstate/spokes/<env>/
 spoke_environments = ["dev"]
 

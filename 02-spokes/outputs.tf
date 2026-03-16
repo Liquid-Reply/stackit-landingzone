@@ -15,7 +15,7 @@ output "network_area_id" {
 
 output "spoke_network_prefixes" {
   value       = module.spoke_network.ipv4_prefixes
-  description = "Spoke network IPv4 prefixes (CIDRs) — use for SG ingress rules in team projects"
+  description = "Spoke network IPv4 prefixes (CIDRs) - use for SG ingress rules in team projects"
 }
 
 output "environment" {
@@ -48,12 +48,12 @@ output "dns_zone_fqdn" {
 #   description = "Environment Grafana dashboard URL"
 # }
 
-output "bastion_public_ip" {
-  value       = var.enable_services ? module.bastion[0].public_ip : ""
-  description = "Environment bastion public IP address"
+output "gateway_public_ip" {
+  value       = var.enable_services ? module.gateway[0].public_ip : ""
+  description = "Environment gateway public IP address"
 }
 
-output "bastion_private_ip" {
-  value       = var.enable_services ? module.bastion[0].private_ip : ""
-  description = "Environment bastion private IP address"
+output "gateway_private_ip" {
+  value       = var.enable_services ? module.gateway[0].private_ip : ""
+  description = "Environment gateway private IP address"
 }

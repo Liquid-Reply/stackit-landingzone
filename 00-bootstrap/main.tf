@@ -8,7 +8,7 @@ module "state_bucket" {
   credential_expiration  = var.credential_expiration
 }
 
-# Audit/logging bucket — depends on state_bucket to avoid concurrent
+# Audit/logging bucket - depends on state_bucket to avoid concurrent
 # Object Storage service enablement (409 Conflict race condition)
 module "audit_bucket" {
   source = "../modules/objectstorage"

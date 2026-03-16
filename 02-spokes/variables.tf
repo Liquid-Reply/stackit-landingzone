@@ -49,7 +49,7 @@ variable "dns_subdomain" {
   description = "DNS subdomain for this environment (e.g., dev)"
 }
 
-# SNA — Per-environment network area
+# SNA - Per-environment network area
 variable "sna_transfer_network" {
   type        = string
   default     = "10.255.0.0/24"
@@ -69,11 +69,11 @@ variable "sna_default_prefix_length" {
   description = "Default prefix length for networks in this environment's SNA"
 }
 
-# Services — set to true after the first apply (project must exist for plan validation)
+# Services - set to true after the first apply (project must exist for plan validation)
 variable "enable_services" {
   type        = bool
   default     = false
-  description = "Enable observability and bastion. Set to true after the spoke project has been created (required because the STACKIT provider validates service plans against the API at plan time)."
+  description = "Enable observability and gateway. Set to true after the spoke project has been created (required because the STACKIT provider validates service plans against the API at plan time)."
 }
 
 # Observability
@@ -95,29 +95,34 @@ variable "logs_retention_days" {
   description = "Logs retention in days"
 }
 
-# Bastion
-variable "bastion_machine_type" {
+# Gateway (subnet router / bastion)
+variable "gateway_machine_type" {
   type        = string
   default     = "g2i.1"
-  description = "Bastion VM instance type"
+  description = "Gateway VM instance type"
 }
 
-variable "bastion_image_id" {
+variable "gateway_image_id" {
   type        = string
   default     = ""
-  description = "Bastion OS image UUID"
+  description = "Gateway OS image UUID"
+
+  validation {
+    condition     = var.gateway_image_id != "" || !var.enable_services
+    error_message = "gateway_image_id is required when enable_services is true."
+  }
 }
 
 variable "ssh_public_key" {
   type        = string
   default     = ""
-  description = "SSH public key for bastion access"
+  description = "SSH public key for gateway access"
 }
 
 variable "allowed_ssh_cidrs" {
   type        = list(string)
   default     = []
-  description = "CIDRs allowed to SSH into the bastion (external access)"
+  description = "CIDRs allowed to SSH into the gateway (external access, only when public IP enabled)"
 }
 
 variable "scrape_targets" {
@@ -134,7 +139,7 @@ variable "scrape_targets" {
 variable "enable_netbird_agent" {
   type        = bool
   default     = false
-  description = "Install NetBird agent on bastion. Requires NetBird management server to be running."
+  description = "Install NetBird agent on gateway. Requires NetBird management server to be running."
 }
 
 

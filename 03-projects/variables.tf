@@ -26,7 +26,7 @@ variable "team_editor_permissions" {
   description = "Permission list for the custom team-editor role. When set, 'editor' role assignments are remapped to a restricted custom role that excludes public IP and IAM management. Generate with: ./scripts/generate-team-role-permissions.sh"
 }
 
-# Deployed spoke environments — remote state is read for each
+# Deployed spoke environments - remote state is read for each
 variable "spoke_environments" {
   type        = set(string)
   default     = ["dev"]

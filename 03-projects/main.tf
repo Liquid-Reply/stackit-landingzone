@@ -1,5 +1,5 @@
 # -----------------------------------------------------------------------------
-# Remote State — Read hub outputs (folder IDs, SA emails)
+# Remote State - Read hub outputs (folder IDs, SA emails)
 # -----------------------------------------------------------------------------
 data "terraform_remote_state" "hub" {
   backend = "s3"
@@ -21,7 +21,7 @@ data "terraform_remote_state" "hub" {
 }
 
 # -----------------------------------------------------------------------------
-# Remote State — Read spoke outputs (SNA ID, spoke prefix, DNS zone info)
+# Remote State - Read spoke outputs (SNA ID, spoke prefix, DNS zone info)
 # One data source per deployed environment.
 # -----------------------------------------------------------------------------
 data "terraform_remote_state" "spoke" {
@@ -69,7 +69,7 @@ locals {
 }
 
 # -----------------------------------------------------------------------------
-# Project Factory — One instance per request
+# Project Factory - One instance per request
 # Each project is attached to its environment's SNA (not a shared one).
 # network_area_id and spoke_cidr come from the environments variable,
 # which is populated from spoke outputs.
@@ -84,11 +84,12 @@ module "project" {
   team                = each.value.team
   environment         = each.value.environment
   network_area_id     = local.environments[each.value.environment].network_area_id
-  hub_cidr            = local.environments[each.value.environment].spoke_cidr
+  spoke_cidr          = local.environments[each.value.environment].spoke_cidr
   billing_reference   = try(each.value.billing_reference, "")
   extra_labels        = try(each.value.extra_labels, {})
 
-  # SA roles are inherited from teams/ folder-level IAM — no need to assign per-project
+  # Monitoring SA gets reader via teams/ folder inheritance - no per-project assignment needed.
+  # CI/CD SA is NOT assigned to team projects - teams bring their own CI/CD credentials.
   sa_cicd_email       = ""
   sa_monitoring_email = ""
 
@@ -101,7 +102,7 @@ module "project" {
 
   team_editor_permissions = var.team_editor_permissions
 
-  # Firewall — additional ingress rules from YAML (approved via PR)
+  # Firewall - additional ingress rules from YAML (approved via PR)
   firewall_rules = [
     for r in try(each.value.firewall_rules, []) : {
       name     = r.name
@@ -112,7 +113,7 @@ module "project" {
     }
   ]
 
-  # DNS — delegated sub-zone per project (self-service via STACKIT portal)
+  # DNS - delegated sub-zone per project (self-service via STACKIT portal)
   dns_zone_project_id = try(local.environments[each.value.environment].dns_zone_project_id, "")
   dns_zone_id         = try(local.environments[each.value.environment].dns_zone_id, "")
   dns_zone_fqdn       = try(local.environments[each.value.environment].dns_zone_fqdn, "")

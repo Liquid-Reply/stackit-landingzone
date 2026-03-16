@@ -89,8 +89,8 @@ Each layer builds on the outputs of the previous one. They **must** be applied s
 # Layer 0 -- State backend (uses local state)
 make bootstrap
 
-# Layer 1 -- Hub project, network area, DNS, observability, bastion, IAM
-#   Edit 01-hub/terraform.tfvars first (org_id, owner_email, DNS, bastion image, SSH key, etc.)
+# Layer 1 -- Hub project, network area, DNS, gateway, IAM
+#   Edit 01-hub/terraform.tfvars first (org_id, owner_email, DNS, gateway image, SSH key, etc.)
 make hub
 
 # Layer 2 -- Spoke environments (dev, staging, prod)
@@ -154,7 +154,7 @@ Each environment has its own SNA (no L3 route between them)
 2. **Spoke projects** are labeled with their environment's `networkArea = <SNA_ID>` and get a routed network
 3. **Team projects** (from the project factory) are labeled with the same SNA ID as their environment
 4. Any routed network created inside an SNA-labeled project automatically gets L3 connectivity to all other networks in the same SNA
-5. There is **no routing path between environments** — each SNA is an isolated L3 domain
+5. There is **no routing path between environments** - each SNA is an isolated L3 domain
 
 ### What lives in the hub
 
@@ -168,9 +168,9 @@ Each environment has its own SNA (no L3 route between them)
 
 | Service | Purpose |
 |---|---|
-| **Bastion host** | SSH jump server / NetBird subnet router (no public IP when VPN is enabled) |
+| **Gateway** | NetBird subnet router / SSH bastion (no public IP when VPN is enabled) |
 | **DNS sub-zone** | Environment sub-zone (e.g. `dev.stackit-lz-demo.org`), NS-delegated from hub |
-| **Observability** | Per-environment Prometheus + Grafana instance |
+| **Observability** | Per-environment Prometheus + Grafana instance *(currently disabled, planned)* |
 
 ### Security groups
 
@@ -178,8 +178,8 @@ Every spoke and team project is provisioned with three default security groups:
 
 | Rule | Direction | Protocol | Source / Dest | Ports |
 |---|---|---|---|---|
-| Allow HTTPS from hub | Ingress | TCP | `10.0.0.0/8` | 443 |
-| Allow SSH from hub | Ingress | TCP | `10.0.0.0/8` | 22 |
+| Allow HTTPS from spoke | Ingress | TCP | `<spoke prefix>` | 443 |
+| Allow SSH from spoke | Ingress | TCP | `<spoke prefix>` | 22 |
 | Allow all egress | Egress | any | any | any |
 
 No other inbound traffic is permitted by default. Teams can add additional security groups in their own projects.
@@ -198,7 +198,7 @@ Organization
 │   ├── IAM: platform team = owner ──────> inherited by hub + all spokes
 │   │
 │   ├── Hub Project
-│   │   └── IAM: sa-cicd = editor, sa-monitoring = reader
+│   │   └── IAM: sa-monitoring = reader
 │   │
 │   ├── Spoke: dev
 │   │   └── IAM: developers = editor       (can deploy)
@@ -210,7 +210,6 @@ Organization
 │       └── IAM: (no additional roles)      (platform team only)
 │
 └── teams/                                 # Self-service team projects
-    ├── IAM: sa-cicd = editor ────────────> inherited by ALL team projects
     ├── IAM: sa-monitoring = reader ──────> inherited by ALL team projects
     │
     ├── team-alpha-dev
@@ -269,7 +268,7 @@ To generate the permissions list from the live API:
 | Identity | Hub | Dev Spoke | Staging Spoke | Prod Spoke | Team Projects |
 |---|---|---|---|---|---|
 | **Platform team** | owner | owner (inherited) | owner (inherited) | owner (inherited) | -- |
-| **SA CI/CD** | editor | editor | editor | editor | editor (folder) |
+| **SA CI/CD** | editor | editor | editor | editor | -- |
 | **SA Monitoring** | reader | reader | reader | reader | reader (folder) |
 | **Developers** | -- | editor | reader | -- | per YAML |
 | **Team leads** | -- | -- | -- | -- | owner (per YAML) |
@@ -280,7 +279,7 @@ Key points:
 - **Prod is locked down** -- only the platform team (via folder inheritance) and the CI/CD service account can make changes. No individual developer has direct access.
 - **Staging is read-only for developers** -- they can inspect resources but must deploy through CI/CD.
 - **Dev is open for developers** -- they have editor access for fast iteration.
-- **Team projects inherit SA access automatically** -- assigning roles on the `teams/` folder means every new project gets CI/CD and monitoring access without any per-project configuration.
+- **Team projects inherit monitoring access automatically** -- the monitoring SA role is assigned on the `teams/` folder so every new project gets read access without per-project configuration. CI/CD access is a per-team responsibility and must be granted explicitly.
 - **Team members get `team-editor`** -- when `team_editor_permissions` is configured, any YAML request for `editor` is automatically remapped to the restricted `team-editor` custom role. Teams keep full UI access but cannot create public IPs or escalate permissions.
 
 ---
@@ -323,10 +322,10 @@ extra_labels:
 | What | Details |
 |---|---|
 | STACKIT project | Under `teams/` folder, labeled with SNA for network connectivity |
-| Routed network | Automatic L3 connectivity to hub and all spokes |
-| Security groups | HTTPS + SSH from hub allowed, all egress allowed |
+| Routed network | Automatic L3 connectivity to all projects in the same environment |
+| Security groups | HTTPS + SSH from spoke allowed, all egress allowed |
 | Team IAM | Roles exactly as specified in the YAML `members` list |
-| SA access | CI/CD (editor) + Monitoring (reader) inherited from `teams/` folder |
+| SA access | Monitoring (reader) inherited from `teams/` folder |
 
 ---
 
