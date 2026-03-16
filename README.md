@@ -34,8 +34,8 @@ The landing zone authenticates via **key-flow** (RSA key pair). You need a servi
 2. Go to **Service Accounts** and create a new service account (e.g. `sa-terraform-bootstrap`)
 3. Assign the `owner` role on the management project and the `owner` role on the organization
 4. Create a **service account key** (key-flow):
-   - Download the **key JSON** and save it to `/Users/maxschmidt/Documents/git/liquid/stackit-landingzone/.stackit/sa-key.json`
-   - Download the **RSA private key** (PEM) and save it to `/Users/maxschmidt/Documents/git/liquid/stackit-landingzone/.stackit/sa-key.pem`
+   - Download the **key JSON** and save it to `sa-key.json`
+   - Download the **RSA private key** (PEM) and save it to `sa-key.pem`
 
 **Via the STACKIT CLI:**
 
@@ -64,7 +64,7 @@ stackit service-account key create \
 Ensure the files are protected:
 
 ```bash
-chmod 600 /Users/maxschmidt/Documents/git/liquid/stackit-landingzone/.stackit/sa-key.json /Users/maxschmidt/Documents/git/liquid/stackit-landingzone/.stackit/sa-key.pem
+chmod 600 sa-key.json sa-key.pem
 ```
 
 ### 2. Configure the bootstrap layer
@@ -73,8 +73,8 @@ Edit `00-bootstrap/terraform.tfvars`:
 
 ```hcl
 region                   = "eu01"
-service_account_key_path = "/Users/maxschmidt/Documents/git/liquid/stackit-landingzone/.stackit/sa-key.json"
-private_key_path         = "/Users/maxschmidt/Documents/git/liquid/stackit-landingzone/.stackit/sa-key.pem"
+service_account_key_path = "sa-key.json"
+private_key_path         = "sa-key.pem"
 management_project_id    = "<YOUR_MANAGEMENT_PROJECT_ID>"
 state_bucket_name        = "lz-tfstate"
 audit_bucket_name        = "lz-audit-logs"

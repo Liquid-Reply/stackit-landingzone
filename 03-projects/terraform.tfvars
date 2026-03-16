@@ -2,8 +2,8 @@
 # Update these values for your environment
 
 region                   = "eu01"
-service_account_key_path = "/Users/maxschmidt/Documents/git/liquid/stackit-landingzone/.stackit/sa-key.json"
-private_key_path         = "/Users/maxschmidt/Documents/git/liquid/stackit-landingzone/.stackit/sa-key.pem"
+service_account_key_path = "sa-key.json"
+private_key_path         = "sa-key.pem"
 requests_path            = "requests"
 
 # Custom RBAC - restrict "editor" to exclude public IP + IAM management

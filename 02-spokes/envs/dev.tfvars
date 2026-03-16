@@ -4,8 +4,8 @@
 # Second apply: set enable_services = true  (creates observability, gateway)
 
 region                   = "eu01"
-service_account_key_path = "/Users/maxschmidt/Documents/git/liquid/stackit-landingzone/.stackit/sa-key.json"
-private_key_path         = "/Users/maxschmidt/Documents/git/liquid/stackit-landingzone/.stackit/sa-key.pem"
+service_account_key_path = "sa-key.json"
+private_key_path         = "sa-key.pem"
 organization_id          = "825158dd-6d82-4fa9-8891-c59f2d1f672c"
 
 environment       = "dev"
