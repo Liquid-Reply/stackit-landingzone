@@ -1,0 +1,68 @@
+name: 'onboarding-worflow'
+
+env: 
+    FILEPATH_VAR: '03-projects/requests/**'
+
+on:
+  pull_request:
+    branches:
+      - '*'
+      - '!main'
+    types: [opened] #, synchronize, reopened]
+    paths: 
+      - $FILEPATH_VAR
+  push:
+    branches:
+      - '*'
+      - '!master'
+    paths: 
+      - $FILEPATH_VAR
+  workflow_dispatch: {}
+
+jobs:
+  pr-with-terraform:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      # Terraform steps
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.14.6   # or the version you use
+
+      - name: Terraform Init
+        working-directory: .
+        run: terraform init -input=false
+
+      - name: Terraform Plan
+        id: tf_plan
+        working-directory: .
+        run: |
+          terraform plan -no-color -input=false > tfplan.txt
+          echo "Plan completed"
+        continue-on-error: false
+
+      - name: Read plan output
+        id: read_plan
+        run: |
+          PLAN_CONTENT="$(sed -e 's/`/\\`/g' tfplan.txt | sed -e 's/\r$//' )"
+          echo "plan<<EOF" >> $GITHUB_OUTPUT
+          echo "$PLAN_CONTENT" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Comment Terraform plan on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd #commit hash > version
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: ${{ steps.read_plan.outputs.plan }}
+            })
+           
