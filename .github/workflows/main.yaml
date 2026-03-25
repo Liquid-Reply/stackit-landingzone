@@ -1,7 +1,7 @@
 name: 'onboarding-worflow'
 
 env: 
-    WORKING_DIR: "./03-projects/"
+    WORKING_DIR: ./03-projects
 
 on:
   pull_request:
