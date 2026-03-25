@@ -12,8 +12,8 @@ terraform {
     skip_s3_checksum            = true
     skip_requesting_account_id  = true
     # access_key and secret_key via AWS_ACCESS_KEY_ID / AWS_ACCESS_KEY_ID env vars
-    secret_key = var.AWS_SECRET_ACCESS_KEY
-    access_key = var.AWS_ACCESS_KEY_ID
+    #secret_key = var.AWS_SECRET_ACCESS_KEY
+    #access_key = var.AWS_ACCESS_KEY_ID
 
   }
 }
