@@ -5,16 +5,14 @@ env:
 
 on:
   pull_request:
-    branches:
-      - '*'
-      - '!main'
+    branches-ignore:
+      - main
     types: [opened] #, synchronize, reopened]
     paths: 
       - "03-projects/requests/**"
   push:
-    branches:
-      - '*'
-      - '!master'
+    branches-ignore:
+      - main
     paths: 
       - "03-projects/requests/**"
   workflow_dispatch: {}
@@ -28,7 +26,9 @@ jobs:
       pull-requests: write
 
     steps:
-      # Terraform steps
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
@@ -36,14 +36,17 @@ jobs:
 
       - name: Terraform Init
         working-directory: ${{ env.WORKING_DIR }}
+        continue-on-error: false
         run: terraform init -input=false
 
       - name: Terraform Plan
         id: tf_plan
         working-directory: ${{ env.WORKING_DIR }}
         run: |
-          terraform plan -no-color -input=false -compact-warnings -out=tfplan.txt
+          terraform plan -no-color -input=false -compact-warnings -out=tfplan
+          terraform show -no-color tfplan > tfplan.txt
           echo "Plan completed"
+
         continue-on-error: false
 
       - name: Read plan output
@@ -59,7 +62,7 @@ jobs:
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd #commit hash > version
         with:
           script: |
-            github.rest.issues.createComment({
+            await github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
