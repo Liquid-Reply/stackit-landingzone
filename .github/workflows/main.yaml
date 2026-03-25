@@ -1,7 +1,7 @@
 name: 'onboarding-worflow'
 
 env: 
-    WORKING_DIR: "03-projects"
+    WORKING_DIR: "03-projects/"
 
 on:
   pull_request:
@@ -32,7 +32,7 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.14.6   # or the version you use
+          terraform_version: 1.14.6   
 
       - name: Terraform Init
         working-directory: ${{ env.WORKING_DIR }}
