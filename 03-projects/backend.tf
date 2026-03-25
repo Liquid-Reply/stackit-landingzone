@@ -11,9 +11,9 @@ terraform {
     skip_region_validation      = true
     skip_s3_checksum            = true
     skip_requesting_account_id  = true
-    # access_key and secret_key via AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY env vars
-    secret_key = ""
-    access_key = ""
+    # access_key and secret_key via AWS_ACCESS_KEY_ID / AWS_ACCESS_KEY_ID env vars
+    secret_key = var.AWS_SECRET_ACCESS_KEY
+    access_key = var.AWS_ACCESS_KEY_ID
 
   }
 }

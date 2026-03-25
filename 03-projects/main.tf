@@ -14,8 +14,8 @@ data "terraform_remote_state" "hub" {
     skip_region_validation      = true
     skip_s3_checksum            = true
     skip_requesting_account_id  = true
-    secret_key                  = ""
-    access_key                  = ""
+    secret_key = var.AWS_SECRET_ACCESS_KEY
+    access_key = var.AWS_ACCESS_KEY_ID
 
   }
 }
@@ -39,8 +39,8 @@ data "terraform_remote_state" "spoke" {
     skip_region_validation      = true
     skip_s3_checksum            = true
     skip_requesting_account_id  = true
-    secret_key                  = ""
-    access_key                  = ""
+    secret_key = var.AWS_SECRET_ACCESS_KEY
+    access_key = var.AWS_ACCESS_KEY_ID
   }
 }
 
