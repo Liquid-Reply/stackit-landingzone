@@ -2,6 +2,7 @@ name: 'onboarding-worflow'
 
 env: 
     FILEPATH_VAR: '03-projects/requests/**'
+    WORKING_DIR: './03-projects/'
 
 on:
   pull_request:
@@ -35,14 +36,14 @@ jobs:
           terraform_version: 1.14.6   # or the version you use
 
       - name: Terraform Init
-        working-directory: .
+        working-directory: $WORKING_DIR
         run: terraform init -input=false
 
       - name: Terraform Plan
         id: tf_plan
-        working-directory: .
+        working-directory: $WORKING_DIR
         run: |
-          terraform plan -no-color -input=false > tfplan.txt
+          terraform plan -no-color -input=false -compact-warnings -out=tfplan.txt
           echo "Plan completed"
         continue-on-error: false
 
