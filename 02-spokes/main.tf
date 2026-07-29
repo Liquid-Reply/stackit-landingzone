@@ -4,7 +4,7 @@
 data "terraform_remote_state" "hub" {
   backend = "s3"
   config = {
-    bucket = "lz-tfstate"
+    bucket = var.state_bucket_name
     key    = "hub/terraform.tfstate"
     endpoints = {
       s3 = "https://object.storage.${var.region}.onstackit.cloud"
@@ -22,6 +22,23 @@ data "terraform_remote_state" "hub" {
 
 locals {
   hub = data.terraform_remote_state.hub.outputs
+}
+
+resource "terraform_data" "netbird_configuration" {
+  input = var.enable_netbird_agent
+
+  lifecycle {
+    precondition {
+      condition = !var.enable_netbird_agent || alltrue([
+        var.enable_services,
+        var.gateway_image_id != "",
+        var.ssh_public_key != "",
+        var.netbird_pat != "",
+        try(local.hub.netbird_management_url, "") != "",
+      ])
+      error_message = "A NetBird gateway requires enable_services, gateway image and SSH key, a non-empty TF_VAR_netbird_pat, and a deployed hub management URL."
+    }
+  }
 }
 
 # -----------------------------------------------------------------------------
@@ -68,6 +85,34 @@ module "spoke_network" {
   routed     = true
   labels     = { environment = var.environment }
   # SNA must be fully configured (including region/IP ranges) before creating networks
+  depends_on = [module.network_area]
+}
+
+# -----------------------------------------------------------------------------
+# STACKIT site-to-site VPN - optional, managed IPsec/IKEv2 with two BGP tunnels.
+# The spoke project is SNA-attached, so this connects only this environment.
+# -----------------------------------------------------------------------------
+module "site_to_site_vpn" {
+  source = "../modules/site-to-site-vpn"
+  count  = var.enable_stackit_vpn ? 1 : 0
+
+  project_id        = module.spoke_project.project_id
+  region            = var.region
+  name              = "${var.environment}-site-to-site-vpn"
+  plan_id           = var.stackit_vpn_plan_id
+  local_asn         = var.stackit_vpn_local_asn
+  remote_asn        = var.stackit_vpn_remote_asn
+  advertised_routes = var.stackit_vpn_advertised_routes
+  tunnel1 = merge(var.stackit_vpn_tunnel1, {
+    pre_shared_key         = var.stackit_vpn_tunnel1_pre_shared_key
+    pre_shared_key_version = var.stackit_vpn_tunnel1_pre_shared_key_version
+  })
+  tunnel2 = merge(var.stackit_vpn_tunnel2, {
+    pre_shared_key         = var.stackit_vpn_tunnel2_pre_shared_key
+    pre_shared_key_version = var.stackit_vpn_tunnel2_pre_shared_key_version
+  })
+  labels = { environment = var.environment, managed_by = "terraform", role = "site-to-site-vpn" }
+
   depends_on = [module.network_area]
 }
 
@@ -146,7 +191,8 @@ resource "stackit_dns_zone" "env" {
 
 # -----------------------------------------------------------------------------
 # Observability - Per-environment monitoring instance
-# Gated by enable_services (provider validates plan_name at plan time)
+# Gated by enable_services. Note: provider validates plan_name at plan time,
+# so this must be re-enabled only after the spoke project exists.
 # -----------------------------------------------------------------------------
 # module "observability" {
 #   source = "../modules/observability"
@@ -183,7 +229,7 @@ resource "stackit_dns_zone" "env" {
 # Gateway - Per-environment subnet router (NetBird VPN peer) or SSH bastion
 # When NetBird is enabled, runs as a VPN peer and subnet router (no public IP).
 # When NetBird is disabled, acts as a traditional bastion with public IP + SSH.
-# Gated by enable_services (requires project to exist)
+# Gated by enable_services for phased deployment control.
 # -----------------------------------------------------------------------------
 module "gateway" {
   source = "../modules/gateway"
@@ -208,6 +254,8 @@ module "gateway" {
       netbird_management_url = local.hub.netbird_management_url
     }
   ) : null
+
+  depends_on = [terraform_data.netbird_configuration]
 }
 
 # -----------------------------------------------------------------------------
@@ -266,12 +314,12 @@ resource "netbird_policy" "env" {
   enabled     = true
 
   rule {
-    name        = "${var.environment}-allow-all"
-    enabled     = true
-    action      = "accept"
+    name          = "${var.environment}-allow-all"
+    enabled       = true
+    action        = "accept"
     bidirectional = true
-    protocol    = "all"
-    sources     = [netbird_group.env[0].id]
+    protocol      = "all"
+    sources       = [netbird_group.env[0].id]
     destination_resource = {
       id   = netbird_network_resource.env[0].id
       type = "network"

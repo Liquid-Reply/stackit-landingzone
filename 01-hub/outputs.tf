@@ -57,15 +57,3 @@ output "netbird_management_url" {
   value       = var.enable_netbird ? module.netbird[0].management_url : ""
   description = "NetBird management URL for agent configuration"
 }
-
-output "netbird_pat" {
-  value       = var.netbird_pat
-  sensitive   = true
-  description = "NetBird admin PAT (provided via tfvars after dashboard setup)"
-}
-
-output "netbird_setup_key" {
-  value       = var.netbird_setup_key
-  sensitive   = true
-  description = "NetBird setup key for spoke gateway registration"
-}

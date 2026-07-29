@@ -161,6 +161,7 @@ Each environment has its own SNA (no L3 route between them)
 | Service | Purpose |
 |---|---|
 | **NetBird VPN** | Self-hosted WireGuard management server on an isolated network (no SNA) |
+| **STACKIT site-to-site VPN** | Optional managed IPsec/IKEv2 service, deployed per spoke to connect that environment's SNA to a remote network |
 | **DNS root zone** | Root zone for the landing zone; spokes create NS-delegated sub-zones |
 | **Service accounts** | `sa-cicd` (deployments) and `sa-monitoring` (metric scraping) |
 
@@ -174,7 +175,7 @@ Each environment has its own SNA (no L3 route between them)
 
 ### Security groups
 
-Every spoke and team project is provisioned with three default security groups:
+Every spoke and team project receives default security groups:
 
 | Rule | Direction | Protocol | Source / Dest | Ports |
 |---|---|---|---|---|
@@ -182,7 +183,21 @@ Every spoke and team project is provisioned with three default security groups:
 | Allow SSH from spoke | Ingress | TCP | `<spoke prefix>` | 22 |
 | Allow all egress | Egress | any | any | any |
 
-No other inbound traffic is permitted by default. Teams can add additional security groups in their own projects.
+Security groups affect a workload only after its network interface attaches them.
+The project factory exports the required group IDs for workload modules; it
+cannot attach groups to infrastructure created later by teams outside this
+repository. Teams can request additional reviewed ingress rules through the
+project-request workflow.
+
+### Managed site-to-site VPN
+
+An environment can optionally use STACKIT's managed site-to-site VPN service.
+It is deployed in the spoke project, where it connects that environment's SNA
+to a remote router using two IPsec/IKEv2 tunnels and BGP. This preserves the
+isolation between dev, staging, and production. It is separate from NetBird and
+does not enable it automatically. See [the site-to-site VPN runbook](docs/site-to-site-vpn.md)
+for activation, remote-site configuration, route filtering, testing, and PSK
+rotation.
 
 ---
 

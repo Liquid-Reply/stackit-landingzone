@@ -51,9 +51,25 @@ module "root_dns" {
 
 # -----------------------------------------------------------------------------
 # NetBird VPN - Self-hosted management server
-# Isolated non-routed network (hub has no SNA).
-# Gated by enable_netbird (two-apply: hub project must exist first).
+# Routed network without SNA (isolated from spoke networks, but routed for public IP).
+# Gated by enable_netbird (depends on hub project and network).
 # -----------------------------------------------------------------------------
+
+resource "terraform_data" "netbird_configuration" {
+  input = var.enable_netbird
+
+  lifecycle {
+    precondition {
+      condition = !var.enable_netbird || alltrue([
+        var.netbird_image_id != "",
+        var.netbird_ssh_public_key != "",
+        var.netbird_letsencrypt_email != "",
+        length(var.netbird_allowed_vpn_cidrs) > 0,
+      ])
+      error_message = "NetBird requires an image ID, emergency SSH public key, Let's Encrypt email, and at least one VPN ingress CIDR."
+    }
+  }
+}
 
 # Hub routed network for NetBird VM (routed for public IP, no SNA)
 module "netbird_network" {
@@ -83,6 +99,8 @@ module "netbird" {
   allowed_vpn_cidrs = var.netbird_allowed_vpn_cidrs
   availability_zone = "${var.region}-1"
   letsencrypt_email = var.netbird_letsencrypt_email
+
+  depends_on = [terraform_data.netbird_configuration]
 }
 
 

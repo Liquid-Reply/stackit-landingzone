@@ -4,6 +4,12 @@ variable "region" {
   description = "STACKIT region"
 }
 
+variable "state_bucket_name" {
+  type        = string
+  default     = "lz-tfstate"
+  description = "Object Storage bucket containing landing-zone Terraform state. The backend is configured separately during terraform init."
+}
+
 variable "service_account_key_path" {
   type        = string
   description = "Path to STACKIT service account key JSON"

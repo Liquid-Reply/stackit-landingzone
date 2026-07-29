@@ -9,7 +9,7 @@ graph TB
 
         subgraph mgmt["Management Project"]
             tfstate["S3: lz-tfstate<br/><i>Terraform State</i>"]
-            audit["S3: lz-audit-logs<br/><i>Audit Trail</i>"]
+            audit["S3: lz-audit-logs<br/><i>Log destination, export configured externally</i>"]
         end
 
         subgraph platform["Folder: platform/"]
@@ -74,7 +74,7 @@ graph TB
 
 ## What Each Project Gets (Project Factory)
 
-Every team project is provisioned with identical guardrails via a YAML request:
+Every team project is provisioned with identical baseline resources via a YAML request:
 
 ```mermaid
 graph LR
@@ -82,7 +82,7 @@ graph LR
         direction TB
         proj["STACKIT Project<br/><i>Attached to env SNA via label</i>"]
         net["Routed Network<br/><i>Private L3 within environment</i>"]
-        sg["Security Groups<br/><i>Spoke-only ingress</i>"]
+        sg["Security Groups<br/><i>Attach to workload NICs</i>"]
         fw["Firewall Rules<br/><i>PR-approved cross-project access</i>"]
         role["Custom RBAC<br/><i>team-editor: no public IP,<br/>no SG changes, no IAM escalation</i>"]
         dns_zone["Delegated DNS Zone<br/><i>Self-service via portal</i>"]
