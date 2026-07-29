@@ -19,7 +19,7 @@ members:
 
 # Optional extra labels
 extra_labels:
-  cost_center: "liquid-123"
+  cost_center: "liquid-Internal"
   application: "liquid-blog"
 
 # DNS - each project automatically gets a delegated zone:

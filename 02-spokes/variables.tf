@@ -4,6 +4,12 @@ variable "region" {
   description = "STACKIT region"
 }
 
+variable "state_bucket_name" {
+  type        = string
+  default     = "lz-tfstate"
+  description = "Object Storage bucket containing landing-zone Terraform state. The backend is configured separately during terraform init."
+}
+
 variable "service_account_key_path" {
   type        = string
   description = "Path to STACKIT service account key JSON"
@@ -69,11 +75,11 @@ variable "sna_default_prefix_length" {
   description = "Default prefix length for networks in this environment's SNA"
 }
 
-# Services - set to true after the first apply (project must exist for plan validation)
+# Services - optional phased deployment flag
 variable "enable_services" {
   type        = bool
   default     = false
-  description = "Enable observability and gateway. Set to true after the spoke project has been created (required because the STACKIT provider validates service plans against the API at plan time)."
+  description = "Enable gateway (and observability when re-enabled). Can be used for phased deployment: first apply creates project/SNA/network, second apply adds gateway. Not strictly required — Terraform handles resource ordering via dependencies."
 }
 
 # Observability
@@ -117,6 +123,11 @@ variable "ssh_public_key" {
   type        = string
   default     = ""
   description = "SSH public key for gateway access"
+
+  validation {
+    condition     = var.ssh_public_key == "" || can(regex("^ssh-(ed25519|rsa|ecdsa) ", var.ssh_public_key))
+    error_message = "ssh_public_key must be a valid OpenSSH public key."
+  }
 }
 
 variable "allowed_ssh_cidrs" {
@@ -140,6 +151,98 @@ variable "enable_netbird_agent" {
   type        = bool
   default     = false
   description = "Install NetBird agent on gateway. Requires NetBird management server to be running."
+}
+
+variable "netbird_pat" {
+  type        = string
+  default     = ""
+  sensitive   = true
+  description = "NetBird PAT for spoke control-plane resources. Set only through TF_VAR_netbird_pat or CI secret injection."
+}
+
+# STACKIT site-to-site VPN
+variable "enable_stackit_vpn" {
+  type        = bool
+  default     = false
+  description = "Create a managed two-tunnel IPsec/IKEv2 BGP VPN for this environment's SNA."
+}
+
+variable "stackit_vpn_plan_id" {
+  type        = string
+  default     = "p500"
+  description = "STACKIT VPN service plan ID. Confirm availability in the target project before enabling."
+}
+
+variable "stackit_vpn_local_asn" {
+  type        = number
+  default     = 64512
+  description = "Private ASN used by the STACKIT VPN gateway."
+}
+
+variable "stackit_vpn_remote_asn" {
+  type        = number
+  default     = 65000
+  description = "Private ASN used by the remote site's BGP router."
+}
+
+variable "stackit_vpn_advertised_routes" {
+  type        = list(string)
+  default     = []
+  description = "SNA CIDRs advertised over BGP. Empty uses STACKIT's SNA ranges."
+}
+
+variable "stackit_vpn_tunnel1" {
+  type = object({
+    remote_address        = string
+    local_tunnel_address  = string
+    remote_tunnel_address = string
+  })
+  default = {
+    remote_address        = ""
+    local_tunnel_address  = ""
+    remote_tunnel_address = ""
+  }
+  description = "Public remote endpoint and BGP link addresses for IPsec tunnel 1."
+}
+
+variable "stackit_vpn_tunnel2" {
+  type = object({
+    remote_address        = string
+    local_tunnel_address  = string
+    remote_tunnel_address = string
+  })
+  default = {
+    remote_address        = ""
+    local_tunnel_address  = ""
+    remote_tunnel_address = ""
+  }
+  description = "Public remote endpoint and BGP link addresses for IPsec tunnel 2."
+}
+
+variable "stackit_vpn_tunnel1_pre_shared_key" {
+  type        = string
+  default     = ""
+  sensitive   = true
+  description = "Tunnel 1 PSK. Set only through TF_VAR_stackit_vpn_tunnel1_pre_shared_key or CI secret injection."
+}
+
+variable "stackit_vpn_tunnel2_pre_shared_key" {
+  type        = string
+  default     = ""
+  sensitive   = true
+  description = "Tunnel 2 PSK. Set only through TF_VAR_stackit_vpn_tunnel2_pre_shared_key or CI secret injection."
+}
+
+variable "stackit_vpn_tunnel1_pre_shared_key_version" {
+  type        = number
+  default     = 1
+  description = "Tunnel 1 PSK rotation counter. Increment when its PSK changes."
+}
+
+variable "stackit_vpn_tunnel2_pre_shared_key_version" {
+  type        = number
+  default     = 1
+  description = "Tunnel 2 PSK rotation counter. Increment when its PSK changes."
 }
 
 

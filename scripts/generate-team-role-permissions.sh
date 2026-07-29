@@ -60,6 +60,19 @@ DENIED_PERMISSIONS=(
   "iam.service-account-federation.edit"
   "iam.service-account-token.create"
   "iam.service-account-token.delete"
+
+  # Project metadata controls SNA attachment and must remain platform-owned.
+  "resource-manager.project.delete"
+  "resource-manager.project.edit"
+  "resource-manager.resource.project.edit"
+
+  # VPN lifecycle is managed exclusively by the platform network layer.
+  "vpn.connection.add"
+  "vpn.connection.remove"
+  "vpn.connection.update"
+  "vpn.gateway.create"
+  "vpn.gateway.delete"
+  "vpn.gateway.update"
 )
 
 echo "Fetching all project-level permissions..." >&2
