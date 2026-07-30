@@ -1,6 +1,10 @@
 resource "stackit_objectstorage_bucket" "this" {
   project_id = var.project_id
   name       = var.bucket_name
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 # Depends on the bucket so the provider only enables Object Storage once

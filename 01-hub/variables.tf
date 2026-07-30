@@ -62,7 +62,7 @@ variable "dev_team_emails" {
 variable "enable_netbird" {
   type        = bool
   default     = false
-  description = "Enable NetBird VPN server. Set to true after hub project exists (two-apply pattern)."
+  description = "Enable NetBird VPN server deployment in the hub project."
 }
 
 variable "netbird_machine_type" {
@@ -81,20 +81,11 @@ variable "netbird_ssh_public_key" {
   type        = string
   default     = ""
   description = "SSH public key for emergency access to NetBird server"
-}
 
-variable "netbird_setup_key" {
-  type        = string
-  default     = ""
-  sensitive   = true
-  description = "NetBird setup key for spoke gateway registration. Create in the NetBird dashboard after initial deployment."
-}
-
-variable "netbird_pat" {
-  type        = string
-  default     = ""
-  sensitive   = true
-  description = "NetBird personal access token for Terraform provider. Create in the NetBird dashboard after initial deployment."
+  validation {
+    condition     = var.netbird_ssh_public_key == "" || can(regex("^ssh-(ed25519|rsa|ecdsa) ", var.netbird_ssh_public_key))
+    error_message = "netbird_ssh_public_key must be a valid OpenSSH public key."
+  }
 }
 
 variable "netbird_allowed_ssh_cidrs" {
@@ -107,6 +98,11 @@ variable "netbird_allowed_vpn_cidrs" {
   type        = list(string)
   default     = ["0.0.0.0/0"]
   description = "CIDRs allowed to access NetBird VPN services (443/tcp, 3478/udp)"
+
+  validation {
+    condition     = alltrue([for cidr in var.netbird_allowed_vpn_cidrs : can(cidrnetmask(cidr))])
+    error_message = "netbird_allowed_vpn_cidrs must contain valid IPv4 CIDRs."
+  }
 }
 
 variable "netbird_letsencrypt_email" {

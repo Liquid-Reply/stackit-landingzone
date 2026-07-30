@@ -4,7 +4,7 @@
 data "terraform_remote_state" "hub" {
   backend = "s3"
   config = {
-    bucket = "lz-tfstate"
+    bucket = var.state_bucket_name
     key    = "hub/terraform.tfstate"
     endpoints = {
       s3 = "https://object.storage.${var.region}.onstackit.cloud"
@@ -26,7 +26,7 @@ data "terraform_remote_state" "spoke" {
 
   backend = "s3"
   config = {
-    bucket = "lz-tfstate"
+    bucket = var.state_bucket_name
     key    = "spokes/${each.key}/terraform.tfstate"
     endpoints = {
       s3 = "https://object.storage.${var.region}.onstackit.cloud"

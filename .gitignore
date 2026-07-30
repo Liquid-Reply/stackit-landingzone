@@ -3,11 +3,16 @@
 *.tfstate
 *.tfstate.backup
 *.tfplan
-.terraform.lock.hcl
+crash.log
 
 # Sensitive variable files
-*.auto.tfvars
-secret.tfvars
+*.tfvars
+!*.example.tfvars
+*.pem
+*-key.json
+.secrets/
+.logs/
+*.connection-id.txt
 
 # OS
 .DS_Store

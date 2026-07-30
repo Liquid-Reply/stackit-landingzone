@@ -1,10 +1,10 @@
 terraform {
-  required_version = ">= 1.7"
+  required_version = ">= 1.11"
 
   required_providers {
     stackit = {
       source  = "stackitcloud/stackit"
-      version = "~> 0.81"
+      version = "~> 0.104"
     }
     netbird = {
       source  = "netbirdio/netbird"
@@ -21,6 +21,6 @@ provider "stackit" {
 }
 
 provider "netbird" {
-  token          = var.enable_netbird_agent ? local.hub.netbird_pat : "unused"
+  token          = var.enable_netbird_agent ? var.netbird_pat : "unused"
   management_url = var.enable_netbird_agent ? local.hub.netbird_management_url : "http://localhost"
 }

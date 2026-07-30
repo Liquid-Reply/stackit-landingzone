@@ -57,3 +57,18 @@ output "gateway_private_ip" {
   value       = var.enable_services ? module.gateway[0].private_ip : ""
   description = "Environment gateway private IP address"
 }
+
+output "stackit_vpn_gateway_id" {
+  value       = var.enable_stackit_vpn ? module.site_to_site_vpn[0].gateway_id : null
+  description = "Managed STACKIT site-to-site VPN gateway ID for this environment"
+}
+
+output "stackit_vpn_connection_id" {
+  value       = var.enable_stackit_vpn ? module.site_to_site_vpn[0].connection_id : null
+  description = "Managed STACKIT site-to-site VPN connection ID for this environment"
+}
+
+output "stackit_vpn_tunnel_public_ips" {
+  value       = var.enable_stackit_vpn ? module.site_to_site_vpn[0].stackit_tunnel_public_ips : {}
+  description = "STACKIT tunnel public IPs for the remote site firewall/router configuration"
+}
