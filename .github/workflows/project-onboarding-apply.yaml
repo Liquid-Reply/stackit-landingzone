@@ -33,7 +33,7 @@ jobs:
 
       - name: Terraform Init
         working-directory: ${{ env.WORKING_DIR }}
-        run: terraform init -input=false
+        run: terraform init -input=false -upgrade
 
       - name: Terraform Plan
         working-directory: ${{ env.WORKING_DIR }}
