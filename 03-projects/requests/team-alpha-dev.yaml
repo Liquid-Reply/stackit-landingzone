@@ -5,7 +5,7 @@ project_name: "team-alpha-dev"
 team: "alpha"
 environment: "dev"
 owner_email: "ma.schmidt@reply.de"
-billing_reference: ""
+billing_reference: "Liquid-internal"
 
 # Team members and their access level
 # Roles: owner, editor, reader
