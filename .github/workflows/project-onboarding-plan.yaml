@@ -109,6 +109,7 @@ jobs:
         id: tf_plan
         working-directory: ${{ env.WORKING_DIR }}
         run: |
+          set -o pipefail
           terraform plan -no-color -input=false -compact-warnings -out=tfplan 2>&1 | tee plan_output.txt
           terraform show -no-color tfplan > tfplan_show.txt
 
