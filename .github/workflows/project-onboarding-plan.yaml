@@ -9,7 +9,8 @@ on:
       - main
     types: [opened, synchronize, reopened]
     paths:
-      - "03-projects/requests/**"
+      - "03-projects/**"
+      - "modules/project-factory/**"
 
 jobs:
   validate-request:
