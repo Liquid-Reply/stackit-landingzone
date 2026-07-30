@@ -115,7 +115,7 @@ jobs:
               ? plan.substring(0, 60000) + '\n\n... (truncated, see workflow logs for full plan)'
               : plan;
 
-            const body = `### 📋 Terraform Plan – Project Onboarding
+            const body = `### Terraform Plan – Project Onboarding
 
             <details>
             <summary>Show Plan Output</summary>
