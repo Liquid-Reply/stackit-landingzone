@@ -26,6 +26,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Write STACKIT credentials
+        run: |
+          mkdir -p .secrets
+          echo '${{ secrets.STACKIT_SA_KEY_JSON }}' > .secrets/sa-key.json
+          echo '${{ secrets.STACKIT_SA_PRIVATE_KEY }}' > .secrets/sa-key.pem
+          chmod 600 .secrets/sa-key.json .secrets/sa-key.pem
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
