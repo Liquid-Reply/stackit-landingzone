@@ -1,0 +1,51 @@
+name: 'Project Onboarding – Apply'
+
+env:
+  WORKING_DIR: ./03-projects
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "03-projects/requests/**"
+
+jobs:
+  terraform-apply:
+    name: Terraform Apply
+    runs-on: ubuntu-latest
+    # Requires manual approval via GitHub Environment protection rules
+    environment: dev
+    env:
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Write STACKIT credentials
+        run: |
+          mkdir -p .secrets
+          echo '${{ secrets.STACKIT_SA_KEY_JSON }}' > .secrets/sa-key.json
+          echo '${{ secrets.STACKIT_SA_PRIVATE_KEY }}' > .secrets/sa-key.pem
+          chmod 600 .secrets/sa-key.json .secrets/sa-key.pem
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.14.6
+
+      - name: Terraform Init
+        working-directory: ${{ env.WORKING_DIR }}
+        run: terraform init -input=false -upgrade
+
+      - name: Terraform Plan
+        working-directory: ${{ env.WORKING_DIR }}
+        run: terraform plan -no-color -input=false -compact-warnings -out=tfplan
+
+      - name: Terraform Apply
+        working-directory: ${{ env.WORKING_DIR }}
+        run: terraform apply -input=false -auto-approve tfplan

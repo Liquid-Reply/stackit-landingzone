@@ -1,0 +1,163 @@
+name: 'Project Onboarding – Plan & Validate'
+
+env:
+  WORKING_DIR: ./03-projects
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened]
+    paths:
+      - "03-projects/**"
+      - "modules/project-factory/**"
+
+jobs:
+  validate-request:
+    name: Validate YAML Request
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate request YAML files
+        run: |
+          ERRORS=0
+          for file in $(git diff --name-only --diff-filter=AM origin/main -- '03-projects/requests/*.yaml'); do
+            echo "::group::Validating $file"
+
+            # Skip template files
+            if [[ "$file" == *"_template"* ]]; then
+              echo "Skipping template file"
+              echo "::endgroup::"
+              continue
+            fi
+
+            # Check required fields
+            for field in project_name team environment owner_email; do
+              value=$(yq -r ".$field // empty" "$file")
+              if [ -z "$value" ]; then
+                echo "::error file=$file::Missing required field: $field"
+                ERRORS=$((ERRORS + 1))
+              fi
+            done
+
+            # Validate environment value
+            env_value=$(yq -r '.environment // empty' "$file")
+            if [ -n "$env_value" ] && [[ ! "$env_value" =~ ^(dev|staging|prod)$ ]]; then
+              echo "::error file=$file::Invalid environment '$env_value'. Must be: dev, staging, or prod"
+              ERRORS=$((ERRORS + 1))
+            fi
+
+            # Validate member roles
+            member_count=$(yq -r '.members | length' "$file" 2>/dev/null || echo "0")
+            for i in $(seq 0 $((member_count - 1))); do
+              role=$(yq -r ".members[$i].role // empty" "$file")
+              email=$(yq -r ".members[$i].email // empty" "$file")
+              if [ -z "$email" ]; then
+                echo "::error file=$file::Member at index $i is missing 'email'"
+                ERRORS=$((ERRORS + 1))
+              fi
+              if [ -n "$role" ] && [[ ! "$role" =~ ^(owner|editor|reader)$ ]]; then
+                echo "::error file=$file::Invalid role '$role' for member '$email'. Must be: owner, editor, or reader"
+                ERRORS=$((ERRORS + 1))
+              fi
+            done
+
+            echo "::endgroup::"
+          done
+
+          if [ $ERRORS -gt 0 ]; then
+            echo "::error::Validation failed with $ERRORS error(s)"
+            exit 1
+          fi
+          echo "All request files validated successfully"
+
+  terraform-plan:
+    name: Terraform Plan
+    needs: validate-request
+    runs-on: ubuntu-latest
+    environment: dev
+    env:
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Write STACKIT credentials
+        run: |
+          mkdir -p .secrets
+          echo '${{ secrets.STACKIT_SA_KEY_JSON }}' > .secrets/sa-key.json
+          echo '${{ secrets.STACKIT_SA_PRIVATE_KEY }}' > .secrets/sa-key.pem
+          chmod 600 .secrets/sa-key.json .secrets/sa-key.pem
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.14.6
+
+      - name: Terraform Init
+        working-directory: ${{ env.WORKING_DIR }}
+        run: terraform init -input=false -upgrade
+
+      - name: Terraform Plan
+        id: tf_plan
+        working-directory: ${{ env.WORKING_DIR }}
+        run: |
+          set -o pipefail
+          terraform plan -no-color -input=false -compact-warnings -out=tfplan 2>&1 | tee plan_output.txt
+          terraform show -no-color tfplan > tfplan_show.txt
+
+      - name: Comment plan on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const plan = fs.readFileSync('${{ env.WORKING_DIR }}/tfplan_show.txt', 'utf8');
+            const truncated = plan.length > 60000
+              ? plan.substring(0, 60000) + '\n\n... (truncated, see workflow logs for full plan)'
+              : plan;
+
+            const body = `### Terraform Plan – Project Onboarding
+
+            <details>
+            <summary>Show Plan Output</summary>
+
+            \`\`\`hcl
+            ${truncated}
+            \`\`\`
+
+            </details>
+
+            *Pusher: @${{ github.actor }}, Workflow: \`${{ github.workflow }}\`*`;
+
+            // Find and update existing comment or create new one
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const botComment = comments.find(c =>
+              c.body.includes('Terraform Plan – Project Onboarding')
+            );
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: body,
+              });
+            }

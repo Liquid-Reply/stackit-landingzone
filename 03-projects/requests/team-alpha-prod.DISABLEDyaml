@@ -1,0 +1,20 @@
+# Project Request: Team Alpha - Production
+# Production projects have stricter access controls.
+
+project_name: "team-alpha-prod"
+team: "alpha"
+environment: "prod"
+owner_email: "alpha-lead@example.com"
+
+# Only lead gets editor, rest are readers in prod
+members:
+  - email: "alpha-lead@example.com"
+    role: "owner"
+  - email: "alpha-dev1@example.com"
+    role: "reader"
+  - email: "alpha-dev2@example.com"
+    role: "reader"
+
+extra_labels:
+  cost_center: "cc-1234"
+  application: "webshop"

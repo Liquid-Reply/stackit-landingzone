@@ -1,0 +1,24 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfplan
+crash.log
+
+# Sensitive variable files
+*.tfvars
+!*.example.tfvars
+*.pem
+*-key.json
+.secrets/
+.logs/
+*.connection-id.txt
+
+# OS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+*.swp
+.stackit/

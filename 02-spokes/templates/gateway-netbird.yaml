@@ -1,0 +1,26 @@
+#cloud-config
+package_update: true
+
+write_files:
+  - path: /usr/local/bin/netbird-init.sh
+    permissions: '0755'
+    content: |
+      #!/bin/bash
+      export HOME=/root
+
+      sysctl -w net.ipv4.ip_forward=1
+      echo 'net.ipv4.ip_forward=1' > /etc/sysctl.d/99-netbird.conf
+      sysctl --system
+
+      # Wait until daemon responds
+      until systemctl is-active --quiet netbird; do
+        sleep 2
+      done
+
+      sleep 5
+
+      netbird up --setup-key ${netbird_setup_key} --management-url ${netbird_management_url}
+
+runcmd:
+  - curl -fsSL https://pkgs.netbird.io/install.sh | sh
+  - /usr/local/bin/netbird-init.sh
